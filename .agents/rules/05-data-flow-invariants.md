@@ -1,0 +1,22 @@
+---
+type: Agent Rule
+title: Mandates
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
+description: "- **Table-to-Trace Parity:** Every Markdown Data-Flow Matrix table MUST
+  have a corresponding Pytest trace test."
+tags: [ecs, numba, testing, data-flow-matrix]
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+trigger: always_on
+rule_id: data-flow-invariants
+severity: critical
+---
+
+# Mandates
+
+- **Table-to-Trace Parity (Rule 05-A):** Every Markdown Data-Flow Matrix table MUST have a corresponding Pytest trace test in `tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`. Discrepancies between documented table values and runtime test trace arrays are treated as build-blocking failures.
+- **Branchless SIMD Mask Mandate (Rule 05-B):** JIT kernels implementing Data-Flow Matrix rules must execute array transfers via scalar/vector float multiplication (`delta * alive_mask`). `if/else` conditionals on entity states in inner JIT loops are strictly prohibited in the hot path.
+- **Bilateral Resource Mapping (Rule 05-C):** OKF frontmatter `resources: []` or `sources: []` for any scientific model doc containing a Data-Flow Matrix MUST explicitly declare both the underlying system file (e.g., `app/engine/systems/signaling/emission.py`) AND the corresponding trace test file (`tests/integration/scientific_invariants/test_causal_data_flow_matrices.py`).
+- **Continuous Agentic Synchronization Gate (Rule 05-D):** Pre-commit hooks and local CI reject any commit where `scripts/audit_matrix_coverage.py` fails (missing Data-Flow Matrix specifications or bilateral resource links) or where `scripts/verify_matrix_trace_parity.py` detects numerical divergence against runtime simulation traces.

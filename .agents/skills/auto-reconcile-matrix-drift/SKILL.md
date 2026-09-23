@@ -1,0 +1,23 @@
+---
+type: Agent Skill
+title: Trigger
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 1.0
+description: Runs a trace session, captures exact numerical output, and
+  automatically updates the Markdown table rows when parameters drift.
+tags: [automation, reconciliation, data-flow-matrix]
+generated: {by: process:okf-updater, at: "2026-08-14T00:30:00Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+name: Auto Reconcile Matrix Drift
+---
+
+# Trigger
+
+Dispatched by `@matrix-auditor` or `@causal-verifier` when runtime traces diverge from documented markdown tables after intentional parameter updates.
+
+# Execution
+
+```bash
+uv run python scripts/reconcile_matrix_drift.py --doc docs/scientific_model/part_2_autotrophic_dynamics/morphological_defenses.md
+```

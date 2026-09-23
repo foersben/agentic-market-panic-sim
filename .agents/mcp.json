@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "AMPS-Orchestrator": {
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "amps.mcp_server"
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

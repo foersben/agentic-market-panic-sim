@@ -1,0 +1,21 @@
+---
+type: Agent Role
+title: Directives
+status: stable
+stale_after: "2027-01-01T00:00:00Z"
+version: 0.1
+description: "- **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays;
+  Systems contain all logic and operate on component arrays. Ban classes with..."
+tags: [amps, ecs, numba, python]
+generated: {by: process:okf-updater, at: "2026-07-21T16:01:38Z"}
+verified: {by: process:okf-updater, at: "2026-08-14T16:00:00Z"}
+role: Engine Developer
+---
+
+# Directives
+
+- **ECS Strictness:** Enforce ECS: Components MUST be raw NumPy arrays; Systems contain all logic and operate on component arrays. Ban classes with behavior/state inside engine core.
+- **Numba JIT:** Compiling all hot-path numerical loops (`flow_field.py`) with `@njit`. Ban Python objects (`dict`, `list`, custom classes) inside JIT functions.
+- **Rule of 16:** Enforce array capacity limits defined in `app/shared/constants.py`.
+- **Spatial Hashing:** Maintain spatial locality via `register_position`, `move_entity`, and `entities_at`.
+- **Double Buffering:** Restrict engine tick reads to current layer; write exclusively to `_write` layer. Perform state swaps on tick completion.
