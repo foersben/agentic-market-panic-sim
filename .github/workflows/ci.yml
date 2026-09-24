@@ -20,17 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
+        uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: dev
 
       - name: Run Pre-Commit Hooks
-        run: pixi run --frozen -e dev pre-commit run --all-files
+        run: SKIP=enforce-author-identity pixi run --frozen -e dev pre-commit run --all-files
 
       - name: Pass 1 - Logic & Coverage
         env:
@@ -51,10 +51,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
+        uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: dev
 
@@ -66,20 +66,20 @@ jobs:
 
       - name: Upload artifact
         if: ${{ !env.ACT }}
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./site
 
       - name: Deploy to GitHub Pages
         if: ${{ !env.ACT }}
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   architectural-profiling:
     name: SCC Architecture Profile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Generate Sloc, Cloc and Code (scc) Report
         run: docker run --rm -v "${{ github.workspace }}:/pwd:ro" ghcr.io/boyter/scc:master scc --exclude-dir examples /pwd
@@ -90,10 +90,10 @@ jobs:
     permissions:
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
+        uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: dev
 

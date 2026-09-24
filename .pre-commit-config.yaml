@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         # Keep our OKF frontmatter template syntax clean
@@ -11,14 +11,14 @@ repos:
         args: ['--maxkb=10000']
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.2
+    rev: v8.30.1
     hooks:
     - id: gitleaks
 
   # NEW: Catch typos in code and documentation
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.3
     hooks:
       - id: codespell
         additional_dependencies:
@@ -32,7 +32,7 @@ repos:
   # NOTE: We exclude 'notebooks/shared/' here so teammates can share executed
   # outputs (plots/results). To enforce stripping all outputs, remove the exclude line.
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.0
+    rev: 0.9.1
     hooks:
       - id: nbstripout
         files: ^notebooks/
