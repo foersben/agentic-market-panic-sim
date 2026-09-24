@@ -2,9 +2,9 @@
 # 1. Core Project Metadata
 # ==============================================================================
 [project]
-site_name = "Agentic Macro Market Simulator"
-site_description = "High-concurrency Macro Market Simulator powered by generative LLM agents."
-site_url = "https://foersben.github.io/agentic-macro-market"
+site_name = "Agentic Market Panic Simulator (AMPS)"
+site_description = "High-concurrency Agentic Market Panic Simulator powered by generative LLM agents."
+site_url = "https://foersben.github.io/agentic-market-panic-sim"
 docs_dir = "docs"
 site_dir = "site"
 language = "en"

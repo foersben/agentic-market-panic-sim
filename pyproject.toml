@@ -3,12 +3,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agentic-macro-market"
+name = "agentic-market-panic-sim"
 authors = [
     { name = "Benjamin Förster", email = "mail@benjamin-foerster.de" },
 ]
 version = "0.1.0"
-description = "LLM-driven Macroeconomic Market Simulator using ECS"
+description = "High-throughput Agentic Market Panic Simulator modeling irrational panic and liquidity cascades"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -114,7 +114,7 @@ extra-index-urls = [
 ]
 
 [tool.pixi.pypi-dependencies]
-agentic-macro-market = { path = ".", editable = true }
+agentic-market-panic-sim = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
 python = "3.12.*"

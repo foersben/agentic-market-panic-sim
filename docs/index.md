@@ -1,6 +1,6 @@
-# Agentic Macro Market Simulator
+# Agentic Market Panic Simulator
 
-Welcome to the documentation for the **Agentic Macro Market Simulator**.
+Welcome to the documentation for the **Agentic Market Panic Simulator (AMPS)**.
 
 This project implements a high-concurrency Limit Order Book (LOB) matching engine powered by generative LLM agents, leveraging an Entity-Component-System (ECS) architecture, Cython/uvloop event buses, and Numba-JIT acceleration.
 

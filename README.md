@@ -1,4 +1,4 @@
-# Agentic Macro Market Simulator (AMPS)
+# Agentic Market Panic Simulator (AMPS)
 
 A high-throughput, generative agent-based macroeconomic simulator designed to model irrational market panic, liquidity cascades, and behavioral contagion.
 
