@@ -3,7 +3,7 @@
 # ==============================================================================
 [project]
 site_name = "Agentic Market Panic Simulator (AMPS)"
-site_description = "High-concurrency Agentic Market Panic Simulator powered by generative LLM agents."
+site_description = "A high-throughput, generative agent-based simulator modeling irrational panic, liquidity spirals, and behavioral contagion."
 site_url = "https://foersben.github.io/agentic-market-panic-sim"
 docs_dir = "docs"
 site_dir = "site"

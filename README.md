@@ -1,6 +1,6 @@
 # Agentic Market Panic Simulator (AMPS)
 
-A high-throughput, generative agent-based macroeconomic simulator designed to model irrational market panic, liquidity cascades, and behavioral contagion.
+A high-throughput, generative agent-based simulator modeling irrational panic, liquidity spirals, and behavioral contagion.
 
 By coupling the bounded rationality of Large Language Models (LLMs) with a hyper-optimized Numba financial matching engine, AMPS bridges the gap between traditional quantitative finance (which struggles to model human irrationality) and generative AI (which struggles with scale and speed).
 

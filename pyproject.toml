@@ -8,7 +8,7 @@ authors = [
     { name = "Benjamin Förster", email = "mail@benjamin-foerster.de" },
 ]
 version = "0.1.0"
-description = "High-throughput Agentic Market Panic Simulator modeling irrational panic and liquidity cascades"
+description = "A high-throughput, generative agent-based simulator modeling irrational panic, liquidity spirals, and behavioral contagion."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
