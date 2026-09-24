@@ -66,7 +66,7 @@ properties that are hard to get from a service-owned metadata store:
   reader and the content. An engineer can `cat` a concept; an LLM can ingest
   it verbatim into context.
 - **Version-controllable out of the box.** Bundles live in git. Pull
-  requests, line-by-line diffs, blame, and review workflows just work —
+  requests, line-by-line diffs, blame, and review workflows just work -
   knowledge curation becomes a normal software-engineering activity.
 - **Portable and lock-in free.** A bundle is a directory. Ship it as a
   tarball, host it in any repo, mount it from any filesystem, or sync it to
