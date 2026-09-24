@@ -11,3 +11,19 @@ The comprehensive academic and technical architecture for this simulator is docu
 * [View the MLOps Project Plan (PDF)](latex/mlops_project_plan/project_proposal.pdf)
 
 *(Note: Ensure you have built the LaTeX document in `docs/latex/mlops_project_plan` to generate the PDF).*
+
+## Scientific Model
+
+## Scientific Model
+
+* [Reinforcement Learning Distillation](scientific_model/reinforcement_learning.md)
+* [Semantic RAG Caching Pipeline](scientific_model/semantic_caching.md)
+* [Semantic Intent Architecture](scientific_model/semantic_intent_translation.md)
+
+## Architecture
+
+* [Server Infrastructure & NAT Traversal](architecture/server_setup.md)
+
+## MLOps
+
+* [MLOps Execution Plan](mlops/phase_1_execution.md)

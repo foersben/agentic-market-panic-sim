@@ -3,16 +3,56 @@ default:
 	@just --list
 
 # Bootstrap the environment (install Pixi dependencies, pre-commit hooks, and VS Code extensions)
+# Pass '--scratch' or 'scratch' to configure local git scratch repo and JupyterLab experimentation environment
 [group("setup")]
-setup:
+setup mode="":
+	@if [ "{{mode}}" = "--scratch" ] || [ "{{mode}}" = "scratch" ] || [ "{{mode}}" = "experiment" ]; then \
+		just _setup-core; \
+		just _setup-scratch; \
+	elif [ -n "{{mode}}" ]; then \
+		echo "Unknown setup flag: {{mode}}. Supported: --scratch"; \
+		exit 1; \
+	else \
+		just _setup-core; \
+	fi
+
+# Setup local scratch repository with JupyterLab and kernel
+[group("setup")]
+setup-scratch:
+	@just setup --scratch
+
+# Internal core setup
+[private]
+_setup-core:
 	pixi install -e dev
 	pixi run --frozen -e dev pre-commit install
 	@just install-extensions
 
+# Internal scratch setup (initializes local git repo, kernel, and git hygiene)
+[private]
+_setup-scratch:
+	@echo "==> Configuring scratch experimentation repository..."
+	@mkdir -p scratch/notebooks
+	@if [ ! -d "scratch/.git" ]; then \
+		echo "==> Initializing local git repository in scratch/..."; \
+		git -C scratch init; \
+		printf "# AMPS Scratch & Experimentation\n\nLocal workspace for ad-hoc notebooks and scratch explorations.\n" > scratch/README.md; \
+		printf ".ipynb_checkpoints/\n__pycache__/\n*.pyc\n.pytest_cache/\n" > scratch/.gitignore; \
+		echo "*.ipynb filter=nbstripout" > scratch/.gitattributes; \
+		git -C scratch config filter.nbstripout.clean "pixi run -e dev nbstripout"; \
+		git -C scratch config filter.nbstripout.smudge cat; \
+	fi
+	@echo "==> Registering AMPS scratch ipykernel..."
+	@pixi run --frozen -e dev python -m ipykernel install --user --name=amps-scratch --display-name="AMPS (Scratch)"
+	@if [ ! -f "scratch/notebooks/00_quickstart.ipynb" ]; then \
+		python3 -c "import json; nb={'cells':[{'cell_type':'markdown','metadata':{},'source':['# AMPS Scratch Quickstart\n','Test simulation kernels and interact with the engine.\n']},{'cell_type':'code','execution_count':None,'metadata':{},'outputs':[],'source':['import app\n','import numpy as np\n','print(f\"AMPS initialized successfully from {app.__file__}\")\n']}],'metadata':{'kernelspec':{'display_name':'AMPS (Scratch)','language':'python','name':'amps-scratch'},'language_info':{'name':'python','version':'3.12'}},'nbformat':4,'nbformat_minor':5}; json.dump(nb, open('scratch/notebooks/00_quickstart.ipynb', 'w'), indent=2)"; \
+	fi
+	@echo "==> Scratch environment ready at ./scratch. Launch with: just lab"
+
 # Alias target to run bootstrap setup
 [group("setup")]
-install:
-	@just setup
+install mode="":
+	@just setup "{{mode}}"
 
 [group("setup")]
 init:
@@ -157,10 +197,14 @@ serve:
 	pixi run --frozen -e dev zensical build
 	pixi run --frozen -e dev zensical serve -a localhost:9000
 
-# Start a local JupyterLab server inside the dev environment
+# Start a local JupyterLab server inside the scratch environment
 [group("utils")]
 lab:
-	pixi run --frozen -e dev jupyter lab --ip=127.0.0.1 --port=8888
+	@if [ -d "scratch" ]; then \
+		pixi run --frozen -e dev jupyter lab --notebook-dir=scratch --ip=127.0.0.1 --port=8888; \
+	else \
+		pixi run --frozen -e dev jupyter lab --ip=127.0.0.1 --port=8888; \
+	fi
 
 # Clean all temporary files, cache folders, compilation files, and local environments
 [group("utils")]
@@ -170,10 +214,11 @@ clean:
 	rm -rf .cache site build dist .pytest_cache .mypy_cache .ruff_cache .hypothesis .coverage htmlcov .pixi
 	@just clean-notebooks
 
-# Clean Jupyter notebook checkpoint caches under the notebooks directory
+# Clean Jupyter notebook checkpoint caches under the notebooks and scratch directories
 [group("utils")]
 clean-notebooks:
-	find notebooks/ -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+	@if [ -d "notebooks" ]; then find notebooks/ -type d -name ".ipynb_checkpoints" -exec rm -rf {} +; fi
+	@if [ -d "scratch" ]; then find scratch/ -type d -name ".ipynb_checkpoints" -exec rm -rf {} +; fi
 
 # Run the CI pipeline locally using GitHub 'act' tool
 [group("utils")]

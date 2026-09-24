@@ -30,11 +30,11 @@ tags: [okf, standards, provenance]
 > particular agent, framework, model provider, or serving system**. The
 > goal is simple:
 >
-> - **Anyone can produce** OKF — humans authoring by hand, agents built on
+> - **Anyone can produce** OKF - humans authoring by hand, agents built on
 >   any framework (Google ADK, LangChain, custom), export pipelines from
 >   existing catalogs (Dataplex, Unity Catalog, Collibra, …), or scripts
 >   walking a database.
-> - **Anyone can serve and consume** OKF — a static file server, a
+> - **Anyone can serve and consume** OKF - a static file server, a
 >   knowledge-management UI (Obsidian, Notion, MkDocs), an LLM loading
 >   files into context, a search index, or a graph viewer like the one
 >   bundled in this repo.
@@ -42,18 +42,18 @@ tags: [okf, standards, provenance]
 > The agent below is a **proof of concept** demonstrating *one* way to
 > produce OKF bundles automatically. The format itself is the
 > contribution; this agent and the visualizer exist to make the format
-> tangible at both ends — production and consumption.
+> tangible at both ends - production and consumption.
 >
-> **See OKF in practice** — three ready-to-browse bundles produced by this
+> **See OKF in practice** - three ready-to-browse bundles produced by this
 > agent, checked into [`bundles/`](bundles/):
 >
-> - [`bundles/ga4/`](bundles/ga4/) — GA4 e-commerce dataset
+> - [`bundles/ga4/`](bundles/ga4/) - GA4 e-commerce dataset
 >   ([viz.html](bundles/ga4/viz.html))
-> - [`bundles/stackoverflow/`](bundles/stackoverflow/) — Stack Overflow
+> - [`bundles/stackoverflow/`](bundles/stackoverflow/) - Stack Overflow
 >   public dataset ([viz.html](bundles/stackoverflow/viz.html))
-> - [`bundles/crypto_bitcoin/`](bundles/crypto_bitcoin/) — Bitcoin
+> - [`bundles/crypto_bitcoin/`](bundles/crypto_bitcoin/) - Bitcoin
 >   blocks/transactions ([viz.html](bundles/crypto_bitcoin/viz.html))
-> - [`bundles/acme_retail/`](bundles/acme_retail/) — Acme Retail
+> - [`bundles/acme_retail/`](bundles/acme_retail/) - Acme Retail
 >   ([viz.html](bundles/acme_retail/viz.html))
 
 ## Why OKF?
@@ -77,17 +77,17 @@ properties that are hard to get from a service-owned metadata store:
   `resource`, `tags`, `generated`, `status`); use the markdown body for the
   prose, schemas, and example queries that LLMs and humans actually read.
 - **Trust, provenance, and freshness are first-class.** v0.2 puts queryable
-  signals in frontmatter — where a concept came from (`sources` with per-source
+  signals in frontmatter - where a concept came from (`sources` with per-source
   credibility signals), who produced and confirmed it (`generated`, `verified`,
   from which consumers derive a trust tier), and whether it is still current
-  (`status`, `stale_after`) — so an agent-maintained corpus stays trustable
+  (`status`, `stale_after`) - so an agent-maintained corpus stays trustable
   without any bespoke runtime.
 - **Minimally opinionated, freely extensible.** A small set of required
   keys ensures interoperability, but bundles can carry arbitrary extra
   frontmatter keys and arbitrary body sections without breaking
   consumers.
-- **Composes with existing tooling.** Many knowledge tools — Notion,
-  Obsidian, MkDocs, Hugo, Jekyll — already speak markdown plus YAML
+- **Composes with existing tooling.** Many knowledge tools - Notion,
+  Obsidian, MkDocs, Hugo, Jekyll - already speak markdown plus YAML
   frontmatter, so bundles can be browsed, edited, or rendered without
   custom UI.
 - **Progressive disclosure built in.** Auto-generated `index.md` files

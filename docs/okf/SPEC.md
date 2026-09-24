@@ -52,7 +52,7 @@ markdown-plus-frontmatter convention does not make first-class:
 OKF v0.2 makes provenance, trust, lifecycle, and attestation first-class
 while keeping the format minimally opinionated. The format is minimally 
 opinionated. It standardizes only the small set of structural conventions 
-needed to make a knowledge corpus self-describing — anything beyond that
+needed to make a knowledge corpus self-describing - anything beyond that
 is left to the producer.
 
 ### Goals

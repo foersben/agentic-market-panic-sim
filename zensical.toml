@@ -20,6 +20,19 @@ extra_javascript = [
 # Document Tree Navigation Topology
 nav = [
     { Home = "index.md" },
+    { "Scientific Model" = [
+        { "Reinforcement Learning" = "scientific_model/reinforcement_learning.md" },
+        { "Semantic Caching" = "scientific_model/semantic_caching.md" },
+        { "Semantic Intent Translation" = "scientific_model/semantic_intent_translation.md" },
+    ] },
+    { "Architecture" = [
+        { "Server Infrastructure" = "architecture/server_setup.md" },
+    ] },
+    { "MLOps" = [
+        { "Phase 1" = [
+            { "MLOps Execution Plan" = "mlops/phase_1_execution.md" },
+        ] },
+    ] },
 ]
 
 # ==============================================================================
@@ -94,4 +107,9 @@ ci_cd = [".github/workflows/ci.yml"]
 [documentation]
 core = [
     "docs/index.md",
+    "docs/scientific_model/reinforcement_learning.md",
+    "docs/scientific_model/semantic_caching.md",
+    "docs/scientific_model/semantic_intent_translation.md",
+    "docs/architecture/server_setup.md",
+    "docs/mlops/phase_1_execution.md",
 ]
