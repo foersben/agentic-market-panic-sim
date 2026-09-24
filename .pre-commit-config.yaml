@@ -32,7 +32,7 @@ repos:
   # NOTE: We exclude 'notebooks/shared/' here so teammates can share executed
   # outputs (plots/results). To enforce stripping all outputs, remove the exclude line.
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.0
+    rev: 0.9.1
     hooks:
       - id: nbstripout
         files: ^notebooks/
