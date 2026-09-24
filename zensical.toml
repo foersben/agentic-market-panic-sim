@@ -20,16 +20,23 @@ extra_javascript = [
 # Document Tree Navigation Topology
 nav = [
     { Home = "index.md" },
-    { "Scientific Model" = [
-        { "Reinforcement Learning" = "scientific_model/reinforcement_learning.md" },
-        { "Semantic Caching" = "scientific_model/semantic_caching.md" },
-        { "Semantic Intent Translation" = "scientific_model/semantic_intent_translation.md" },
+    { "Simulation Scenarios" = [
+        { "The Flash Crash Benchmark" = "scenarios/flash_crash_benchmark.md" },
     ] },
-    { "Architecture" = [
-        { "Server Infrastructure" = "architecture/server_setup.md" },
+    { "System Architecture" = [
+        { "Infrastructure Layer" = [
+            { "Server Setup" = "architecture/infrastructure/server_setup.md" },
+        ] },
+        { "Cognitive Engine Layer" = [
+            { "Semantic Caching" = "architecture/cognitive_engine/semantic_caching.md" },
+            { "RL Distillation" = "architecture/cognitive_engine/reinforcement_learning.md" },
+        ] },
+        { "Simulation Engine Layer" = [
+            { "Semantic Intent Translation" = "architecture/simulation_engine/semantic_intent_translation.md" },
+        ] },
     ] },
-    { "MLOps" = [
-        { "Phase 1" = [
+    { "MLOps & Operations" = [
+        { "Execution Plans" = [
             { "MLOps Execution Plan" = "mlops/phase_1_execution.md" },
         ] },
     ] },
@@ -107,9 +114,10 @@ ci_cd = [".github/workflows/ci.yml"]
 [documentation]
 core = [
     "docs/index.md",
-    "docs/scientific_model/reinforcement_learning.md",
-    "docs/scientific_model/semantic_caching.md",
-    "docs/scientific_model/semantic_intent_translation.md",
-    "docs/architecture/server_setup.md",
+    "docs/scenarios/flash_crash_benchmark.md",
+    "docs/architecture/infrastructure/server_setup.md",
+    "docs/architecture/cognitive_engine/semantic_caching.md",
+    "docs/architecture/cognitive_engine/reinforcement_learning.md",
+    "docs/architecture/simulation_engine/semantic_intent_translation.md",
     "docs/mlops/phase_1_execution.md",
 ]

@@ -12,18 +12,22 @@ The comprehensive academic and technical architecture for this simulator is docu
 
 *(Note: Ensure you have built the LaTeX document in `docs/latex/mlops_project_plan` to generate the PDF).*
 
-## Scientific Model
+## Simulation Scenarios
 
-## Scientific Model
+* [The Flash Crash Benchmark](scenarios/flash_crash_benchmark.md)
 
-* [Reinforcement Learning Distillation](scientific_model/reinforcement_learning.md)
-* [Semantic RAG Caching Pipeline](scientific_model/semantic_caching.md)
-* [Semantic Intent Architecture](scientific_model/semantic_intent_translation.md)
+## System Architecture
 
-## Architecture
+### Infrastructure Layer
+* [Server Infrastructure & NAT Traversal](architecture/infrastructure/server_setup.md)
 
-* [Server Infrastructure & NAT Traversal](architecture/server_setup.md)
+### Cognitive Engine Layer
+* [Semantic RAG Caching Pipeline](architecture/cognitive_engine/semantic_caching.md)
+* [Reinforcement Learning Distillation](architecture/cognitive_engine/reinforcement_learning.md)
 
-## MLOps
+### Simulation Engine Layer
+* [Semantic Intent Architecture](architecture/simulation_engine/semantic_intent_translation.md)
 
-* [MLOps Execution Plan](mlops/phase_1_execution.md)
+## MLOps & Operations
+
+* [MLOps Execution Plan (Phase 1)](mlops/phase_1_execution.md)
