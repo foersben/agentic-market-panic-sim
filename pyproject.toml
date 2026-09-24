@@ -39,6 +39,7 @@ dev = [
     "types-PyYAML>=6.0.12.20240806",    # Explicitly add type stubs for mypy
     "nbstripout>=0.8.0",
     "hypothesis>=6.0.0",
+    "complexipy>=8.0.1,<9",
 ]
 
 [tool.ruff]
