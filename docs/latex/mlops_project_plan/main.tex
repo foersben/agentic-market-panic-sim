@@ -273,7 +273,7 @@ The infrastructure deploys via standard containerisation to minimise setup overh
 \begin{tabular}{|l|l|p{6cm}|}
 \hline
 \textbf{Layer} & \textbf{Component} & \textbf{Runtime Configuration / Flags} \\ \hline
-\textbf{Base OS} & Ubuntu 24.04 LTS Bare-Metal & Standard kernel, NVIDIA Driver 550+, Docker CE \\ \hline
+\textbf{Base OS} & Ubuntu 26.04 LTS Bare-Metal & Linux 7.0 kernel, NVIDIA Driver 580+ Open, Docker CE \\ \hline
 \textbf{Macro-Orchestrator} & Host CPU & \texttt{llama.cpp} with 70B GGUF model pinned to 128GB RAM \\ \hline
 \textbf{Acceleration} & NVIDIA Container Toolkit & Direct GPU passthrough via \texttt{cdi} / \texttt{--gpus all} \\ \hline
 \textbf{Serving Node} & llama-server Docker Container & \texttt{--model-path <bonsai\_2\_27b> --dtype int2 --mem-fraction-static 0.90} \\ \hline
@@ -311,7 +311,7 @@ The infrastructure deploys via standard containerisation to minimise setup overh
 To ensure the mathematical soundness of the simulation while maintaining a strict delivery timeline, the project employs a streamlined, high-impact lean strategy:
 
 \begin{enumerate}
-    \item \textbf{Local Self-Hosted GitHub Actions Runner:} Automate linting (\texttt{ruff}), secret scanning (\texttt{gitleaks}), Pydantic contract tests, and Numba LOB invariant verification (\texttt{Hypothesis}) directly on the local Ubuntu 24.04 server on every \texttt{git push}.
+    \item \textbf{Local Self-Hosted GitHub Actions Runner:} Automate linting (\texttt{ruff}), secret scanning (\texttt{gitleaks}), Pydantic contract tests, and Numba LOB invariant verification (\texttt{Hypothesis}) directly on the local Ubuntu 26.04 server on every \texttt{git push}.
     \item \textbf{Single-Command Containerization:} Use \texttt{docker compose up} to seamlessly orchestrate llama-server, FastAPI, Redis, and Prometheus without heavy cloud dependencies.
     \item \textbf{Local DVC Data Versioning:} Version market seeds, order book states, and prompt files using DVC backed by local disk storage (\texttt{/var/dvc\_store}).
     \item \textbf{Prometheus \& Grafana Observability:} Track 4 core operational and financial metrics: Time-To-First-Token (TTFT), Inter-Token Latency (ITL), Active Agent Count ($N_{\text{active}}$), and the Herding Index ($H_t$).
@@ -327,7 +327,7 @@ Given the strict 2-month (approximately 160 hours) core execution window, the pr
     \item \textbf{Goal:} Provision the physical server and pass the core MLOps requirements by deploying a fully functional, containerised LLM trading pipeline.
     \item \textbf{Scope:} 
     \begin{itemize}
-        \item \textit{DevOps \& Infrastructure:} Bare-metal provisioning of Ubuntu 24.04, securing network access via Tailscale, kernel-level blacklisting of \texttt{nouveau} drivers, and installing the proprietary NVIDIA 550+ CUDA stack with \texttt{nvidia-container-toolkit} for Docker GPU passthrough.
+        \item \textit{DevOps \& Infrastructure:} Bare-metal provisioning of Ubuntu 26.04, securing network access via Tailscale, enabling ReBAR and disabling CSM in BIOS, and installing the open-source NVIDIA 580+ CUDA stack with \texttt{nvidia-container-toolkit} for Docker GPU passthrough.
         \item \textit{Core Systems:} Building the strictly reproducible \texttt{pixi} environment, constructing the Numba-JIT Limit Order Book (LOB), and setting up the \texttt{uvloop} asynchronous event bus with Redis and LanceDB connections.
         \item \textit{LLM Inference:} Deploying the llama-server container, downloading and serving the quantised models, tuning the KV-Cache memory fraction to \texttt{--mem-fraction-static 0.90} (allocating $\sim$14.4 GB to llama-server and preserving $\sim$1.6 GB of VRAM safety headroom for CUDA drivers and GBNF FSM table allocations), and implementing GBNF/JSON constrained schemas.
         \item \textit{Development Strategy:} During integration testing and debugging, a lightweight proxy model (e.g., Llama-3.1-8B or Mistral-7B-Instruct) replaces the 70B God Agent to eliminate multi-minute CPU prefill latency from iteration loops. The full 70B model is reserved exclusively for final production benchmark runs. The simulation engine and Numba LOB are prioritised for end-to-end integration before investing time in advanced telemetry, \texttt{mutmut} mutation sweeps, or Grafana dashboard fine-tuning.

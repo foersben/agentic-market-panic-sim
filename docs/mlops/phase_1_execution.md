@@ -22,7 +22,7 @@ This document is the chronological, step-by-step implementation guide for Phase 
 
 The foundation relies on a bare-metal installation to maximize P-Core CPU cycles.
 
-1. **Install Ubuntu 24.04 LTS:** Boot from a USB installer. Select a minimal installation.
+1. **Install Ubuntu 26.04 LTS (Resolute Raccoon):** Boot from a USB installer. Select a minimal installation.
 2. **Format as BTRFS:** During the storage configuration step, explicitly override the default `ext4` or `LVM` setup and format the root partition (`/`) as **BTRFS**.
 3. **Enable `zstd` Transparent Compression:** Immediately after the first boot, you must enable compression to protect the consumer NVMe SSD from the massive Zarr telemetry arrays.
 
@@ -44,22 +44,12 @@ Before opening the server to the internet or installing external dependencies, w
 
 ---
 
-## Step 3: The NVIDIA Driver & `nouveau` Trap
+## Step 3: The NVIDIA Open-Source Drivers
 
-Ubuntu 24.04 ships with open-source `nouveau` drivers that conflict aggressively with CUDA. If you install CUDA before disabling `nouveau`, the kernel will panic.
+Ubuntu 26.04 LTS ships with the Linux 7.0 kernel, formally promoting Rust support to stable. This allows NVIDIA's open-source kernel modules (`-open`) to interface seamlessly with the RTX 5070 Ti hardware out-of-the-box, bypassing the old `nouveau` traps and DKMS compilation issues.
 
-1. **Blacklist `nouveau`:**
-
-    * Create a file: `sudo nano /etc/modprobe.d/blacklist-nouveau.conf`
-    * Add the lines:
-      ```text
-      blacklist nouveau
-      options nouveau modeset=0
-      ```
-    * Update the initial ramdisk: `sudo update-initramfs -u`
-    * **REBOOT the server.**
-
-2. **Install Proprietary Drivers:** After rebooting, install the latest stable driver via `sudo apt install nvidia-driver-550` (or newer).
+1. **BIOS Preparation:** Ensure Resizable BAR (ReBAR) is enabled and the Compatibility Support Module (CSM) is disabled in the motherboard BIOS.
+2. **Install Open Drivers:** Pull the latest open drivers directly from the native repositories via `sudo apt install nvidia-driver-580-open`.
 3. **Verify:** Run `nvidia-smi` to ensure the RTX 5070 Ti is recognized and VRAM reads `16384 MiB`.
 
 ---
