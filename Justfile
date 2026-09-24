@@ -177,10 +177,10 @@ clean-notebooks:
 
 # Run the CI pipeline locally using GitHub 'act' tool
 [group("utils")]
-act-ci:
-	act -W .github/workflows/ci.yml
+act-ci *args:
+	./scripts/run_ci_with_act.sh {{args}}
 
 # Run cognitive complexity GitHub Actions workflow locally via act
 [group("utils")]
 act-complexity:
-	act -j cognitive-complexity
+	./scripts/run_ci_with_act.sh --job cognitive-complexity

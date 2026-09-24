@@ -53,7 +53,7 @@ maybe_enable_podman_socket() {
   socket_path="$runtime_dir/podman/podman.sock"
 
   if [[ ! -S "$socket_path" ]]; then
-    systemctl --user start podman.socket >/dev/null 2>&1 || true
+    systemctl --user restart podman.socket >/dev/null 2>&1 || systemctl --user start podman.socket >/dev/null 2>&1 || true
   fi
 
   if [[ -S "$socket_path" && -z "${DOCKER_HOST:-}" ]]; then
@@ -70,7 +70,7 @@ if ! container_runtime_ready; then
 fi
 
 event_name="pull_request"
-job_name=""
+job_name="quality-gate"
 dry_run=0
 extra_args=()
 
@@ -88,6 +88,10 @@ while [[ $# -gt 0 ]]; do
       job_name="$2"
       shift 2
       ;;
+    --all)
+      job_name=""
+      shift
+      ;;
     --)
       shift
       extra_args+=("$@")
@@ -100,7 +104,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-ACT_CMD=(act "$event_name" -W .github/workflows/ci.yml)
+ACT_CMD=(act "$event_name" -W .github/workflows/ci.yml --env ACT=true)
+
+if [[ -n "${DOCKER_HOST:-}" && "${DOCKER_HOST}" == unix://* ]]; then
+  socket_clean="${DOCKER_HOST#unix://}"
+  if [[ -S "$socket_clean" ]]; then
+    ACT_CMD+=(--container-daemon-socket "$DOCKER_HOST")
+  fi
+fi
+
+if [[ -f ".github/workflows/secrets.env" ]]; then
+  ACT_CMD+=(--secret-file ".github/workflows/secrets.env")
+fi
 
 if [[ -n "$job_name" ]]; then
   ACT_CMD+=(-j "$job_name")
@@ -110,5 +125,9 @@ if [[ $dry_run -eq 1 ]]; then
   ACT_CMD+=(-n)
 fi
 
-echo ">>> Rehearsing AMPS GitHub Actions ($event_name) locally using 'act'..."
-exec "${ACT_CMD[@]}" "${extra_args[@]:-}"
+echo ">>> Rehearsing AMPS GitHub Actions ($event_name${job_name:+: $job_name}) locally using 'act'..."
+if [[ ${#extra_args[@]} -gt 0 ]]; then
+  exec "${ACT_CMD[@]}" "${extra_args[@]}"
+else
+  exec "${ACT_CMD[@]}"
+fi
