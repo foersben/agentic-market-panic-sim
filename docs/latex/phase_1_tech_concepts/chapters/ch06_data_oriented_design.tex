@@ -28,7 +28,7 @@ By restructuring the Limit Order Book into an ECS format, all prices for all act
 
 While ECS provides the correct memory layout, standard Python loops still incur massive overhead due to dynamic typing and the Global Interpreter Lock (GIL). To execute the ECS arrays at bare-metal speeds, AMPS leverages \textbf{Numba}, an open-source JIT compiler that translates a subset of Python and NumPy code directly into fast machine code using the LLVM compiler library.
 
-By applying the \texttt{@njit} (No-Python JIT) decorator to the matching engine systems, Numba completely bypasses the Python interpreter. The Python dynamic types are stripped away, and the logic is compiled into highly optimized, statically typed LLVM Intermediate Representation (IR), executing at speeds comparable to native C or C++ \cite{numba_llvmlite_builder}.
+By applying the \texttt{@njit} (No-Python JIT) decorator to the matching engine systems, Numba completely bypasses the Python interpreter. The Python dynamic types are stripped away, and the logic is compiled into highly optimized, statically typed LLVM Intermediate Representation (IR), executing at speeds comparable to native C or C++. The low-level \texttt{llvmlite} LLVM IR builder that underpins this pipeline is discussed in detail in Chapter~\ref{ch:hardware_acceleration_search}, where it is used to inject bare-metal \texttt{llvm.ctpop.i64} intrinsics directly into the compiled code.
 
 \subsection{Branchless SIMD Execution}
 

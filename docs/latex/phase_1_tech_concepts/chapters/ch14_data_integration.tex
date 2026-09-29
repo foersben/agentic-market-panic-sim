@@ -31,7 +31,7 @@ For researchers who cannot access NASDAQ LOBSTER, the BYOD engine is modularly d
 The primary alternatives supported by AMPS are:
 \begin{itemize}
     \item \textbf{Open ITCH Parsers:} AMPS supports raw binary ITCH PCAP files sourced from academic depositories. Users can utilize the built-in Rust parser to convert these open binary dumps into the required LOBSTER-format CSVs.
-    \item \textbf{hkgsas/LOB:} A large-scale, high-frequency limit order book dataset from the Chinese stock market \cite{hkgsas2020benchmark}. It contains billions of ticks for over 2,000 equities, providing a robust baseline for simulating massive, market-wide contagion.
+    \item \textbf{hkgsas/LOB:} A large-scale, high-frequency limit order book dataset from the Chinese stock market \cite{hkgsas2020benchmark}. It contains billions of ticks for over 2,000 equities, providing a robust baseline for simulating massive, market-wide contagion. \textit{Microstructural note:} Chinese equities (SSE/SZSE) enforce a T+1 settlement rule (positions opened on day $T$ cannot be liquidated until day $T+1$) and apply a static $\pm10\%$ daily price board (\textit{zh\={a}ngdi\`{e}t\'{i}ngb\v{a}n}) rather than the rolling LULD bands \cite{sec2012luld} used in US markets. Micro-agent execution rules must be adapted accordingly when ingesting this dataset.
     \item \textbf{Optiver Realized Volatility:} High-frequency Level-2 order book updates reflecting top-of-book market maker liquidity withdrawal dynamics and short-term volatility prediction \cite{optiver2021realized}.
 \end{itemize}
 

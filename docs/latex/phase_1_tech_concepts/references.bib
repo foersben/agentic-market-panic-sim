@@ -126,7 +126,7 @@
   author    = {{StackOverflow Contributors}},
   year      = {2026},
   url       = {https://stackoverflow.com/questions/76428057/do-all-cpus-that-support-avx2-also-support-bmi2-or-popcnt},
-  note      = {Hardware specifications regarding AVX-512 disabling on Raptor Lake and Gracemont E-Core fallbacks.}
+  note      = {Hardware specifications regarding AVX-512 disabling on Raptor Lake and Gracemont E-Core ISA fallbacks. Note: population counting (POPCNT) is an SSE4.2/ABM scalar instruction, not a BMI2 instruction. BMI2 introduces PDEP/PEXT parallel bit deposit/extract operations. On Gracemont E-Cores, POPCNT is available via the SSE4.2 extension and executes in a single ALU clock cycle.}
 }
 
 % Primary Target: Chapter 7.4 (Lock-Free Ring Buffers) & Section C.4.1
