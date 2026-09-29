@@ -1,7 +1,7 @@
 \chapter{Algorithmic Market Making \& Adverse Selection}
 \label{ch:algorithmic_market_making}
 
-If AMPS relied entirely on generative Large Language Models (LLMs) to provide resting liquidity, the simulated market would instantly collapse. The inherent latency of LLM inference---even when heavily quantized---is fundamentally incompatible with the continuous, microsecond-level quoting obligations required to maintain a functional spread. Therefore, the simulation architecture mandates the deployment of deterministic \textbf{Algorithmic Market Makers (AMMs)}. This chapter explores the mathematical logic driving these AMMs and how their defensive behaviors act as the primary catalyst for flash crashes.
+If AMPS relied entirely on generative Large Language Models (LLMs) to provide resting liquidity, the simulated market would instantly collapse. The inherent latency of LLM inference--even when heavily quantized--is fundamentally incompatible with the continuous, microsecond-level quoting obligations required to maintain a functional spread. Therefore, the simulation architecture mandates the deployment of deterministic \textbf{Algorithmic Market Makers (AMMs)}. This chapter explores the mathematical logic driving these AMMs and how their defensive behaviors act as the primary catalyst for flash crashes.
 
 \section{The Function of the Market Maker}
 
@@ -24,7 +24,7 @@ While inventory control is critical for normal market equilibrium, it breaks dow
 
 \section{Adverse Selection and Toxic Flow}
 
-Adverse Selection occurs when a market maker trades against an informed counterparty. In the context of AMPS, when the Macro God Agent broadcasts a severe negative shock, the "Whale" agents receive this information instantly. They generate \textbf{Toxic Flow}---aggressive market sell orders driven by deterministic knowledge that the asset is overvalued.
+Adverse Selection occurs when a market maker trades against an informed counterparty. In the context of AMPS, when the Macro God Agent broadcasts a severe negative shock, the "Whale" agents receive this information instantly. They generate \textbf{Toxic Flow}--aggressive market sell orders driven by deterministic knowledge that the asset is overvalued.
 
 \subsection{The Glosten-Milgrom Formulation}
 

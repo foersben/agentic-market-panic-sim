@@ -15,7 +15,7 @@ To resolve this, AMPS abandons OS-level multithreading entirely in favor of \tex
 
 While the default Python \texttt{asyncio} event loop is a massive improvement over multithreading, it is written in pure Python and remains relatively slow. AMPS replaces the default loop with \textbf{\texttt{uvloop}}.
 
-\texttt{uvloop} is a Cython wrapper around \texttt{libuv} (the ultra-fast C library that powers Node.js). Under the hood, \texttt{uvloop} hooks directly into the operating system's lowest-level I/O notification facilities---specifically the \texttt{epoll} system call on Linux. This paradigm shift allows the single Python thread to monitor thousands of agent states simultaneously in the C-kernel with practically zero polling overhead.
+\texttt{uvloop} is a Cython wrapper around \texttt{libuv} (the ultra-fast C library that powers Node.js). Under the hood, \texttt{uvloop} hooks directly into the operating system's lowest-level I/O notification facilities--specifically the \texttt{epoll} system call on Linux. This paradigm shift allows the single Python thread to monitor thousands of agent states simultaneously in the C-kernel with practically zero polling overhead.
 
 \section{Thundering Herd Mitigation (Singleflight Coalescing)}
 

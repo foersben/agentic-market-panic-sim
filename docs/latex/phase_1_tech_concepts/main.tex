@@ -17,6 +17,7 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{booktabs}
+\usepackage{tabularx}
 \usepackage{fancyhdr}
 
 % Formatting for code blocks
@@ -51,7 +52,7 @@
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-The Agentic Market Panic Simulator (AMPS) addresses a critical gap in economic modeling: simulating the irrational, sentiment-driven dynamics of macroeconomic contagion at a microsecond scale. Utilizing a swarm of 400 generative Large Language Models (LLMs) interacting with a deterministic Limit Order Book (LOB), AMPS bridges behavioral finance and bare-metal high-performance computing. This book presents a cohesive architectural narrative detailing the empirical necessity of traditional finance datasets, the mitigation of computational bottlenecks via Singleflight request coalescing and zero-copy Apache Arrow data pipelines, and the hardware-level necessity of relying on AVX-512 \texttt{popcnt} intrinsics in SMP CPU topologies. Through Matryoshka Representation Learning and 1.58-bit ternary quantization, AMPS achieves latency-optimized generative simulation on high-end workstation hardware.
+The Agentic Market Panic Simulator (AMPS) addresses a critical gap in economic modeling: simulating the irrational, sentiment-driven dynamics of macroeconomic contagion at a microsecond scale. Utilizing a swarm of 400 generative Large Language Models (LLMs) interacting with a deterministic Limit Order Book (LOB), AMPS bridges behavioral finance and bare-metal high-performance computing. This book presents a cohesive architectural narrative detailing the empirical necessity of traditional finance datasets, the mitigation of computational bottlenecks via Singleflight request coalescing and zero-copy Apache Arrow data pipelines, and the hardware-level necessity of relying on SSE4.2 \texttt{popcnt} intrinsics over AVX-512 in heterogeneous CPU topologies. Through Matryoshka Representation Learning and 1.58-bit ternary quantization, AMPS achieves latency-optimized generative simulation on consumer-grade hardware.
 
 \tableofcontents
 
@@ -96,6 +97,7 @@ The Agentic Market Panic Simulator (AMPS) addresses a critical gap in economic m
 \appendix
 \include{chapters/ch20_math_derivations}
 \include{chapters/ch21_singleflight_code}
+\include{chapters/ch22_hardware_optimization_blueprint}
 
 \backmatter
 \bibliographystyle{plain}

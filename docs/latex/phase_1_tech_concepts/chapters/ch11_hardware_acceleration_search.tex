@@ -7,7 +7,7 @@ Having compressed the semantic state of the market into a 128-bit binary signatu
 
 When comparing two dense floating-point vectors, mathematics dictates the use of Cosine Similarity or Euclidean Distance. These operations require floating-point subtraction, multiplication, and accumulation, which consume dozens of clock cycles per dimension.
 
-When comparing two \textit{binary vectors} (strings of 1s and 0s), we utilize the \textbf{Hamming Distance}---a measure of exactly how many bits differ between the two strings.
+When comparing two \textit{binary vectors} (strings of 1s and 0s), we utilize the \textbf{Hamming Distance}--a measure of exactly how many bits differ between the two strings.
 
 Calculating Hamming Distance in a CPU is incredibly elegant. It requires two distinct steps:
 \begin{enumerate}
@@ -55,4 +55,4 @@ To search the cache database efficiently, the Numba JIT engine utilizes the \tex
 
 When Numba compiles the loop, it forces the Gracemont E-cores to execute the hardware \texttt{POPCNT}. The engine loads the 128-bit vector as two 64-bit integers, executes two XORs, two \texttt{POPCNT}s, and an addition, calculating the exact semantic distance between the agent's current state and a historical state in under 5 CPU clock cycles. 
 
-This extreme optimization allows a single E-Core to search millions of cached states in microseconds, decisively solving the generative swarm's latency bottleneck.
+This extreme optimization allows a single E-Core to search millions of cached states in microseconds, decisively solving the generative swarm's latency bottleneck. Furthermore, by pairing this SSE4.2 POPCNT search with a relaxed Hamming threshold ($d_H \le 12$) and a secondary FP32 Cosine Similarity verification step (detailed in Appendix \ref{ch:hardware_optimization_blueprint}), AMPS elevates the zero-GPU cache hit rate from 80\% to 95\% while decisively filtering out angular quantization noise.

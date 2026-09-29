@@ -3,7 +3,7 @@
 
 The study of market microstructure focuses on the intricate processes, temporal dynamics, and algorithmic outcomes of exchanging assets under explicitly defined, latency-sensitive trading rules \cite{ohara1995market}. To construct an Agentic Market Panic Simulator (AMPS), one must first thoroughly deconstruct the financial phenomena it seeks to replicate. 
 
-A market panic---or flash crash---is not merely a rapid depreciation of asset prices; it is a structural failure of market liquidity driven by information asymmetry, bounded rationality, and mechanical forced liquidations. This chapter provides a deep financial and theoretical foundation for the simulation, explaining why modeling irrationality requires generative Large Language Models (LLMs) rather than traditional rational-agent equations.
+A market panic--or flash crash--is not merely a rapid depreciation of asset prices; it is a structural failure of market liquidity driven by information asymmetry, bounded rationality, and mechanical forced liquidations. This chapter provides a deep financial and theoretical foundation for the simulation, explaining why modeling irrationality requires generative Large Language Models (LLMs) rather than traditional rational-agent equations.
 
 \section{The Limitations of Rational Agent Models}
 
@@ -14,38 +14,87 @@ While these models are mathematically elegant and perform well during periods of
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.9, transform shape,
-    node distance=2cm,
-    box/.style={draw, rectangle, rounded corners, fill=blue!10, minimum width=3cm, minimum height=1cm, align=center},
-    shock/.style={draw, star, star points=7, star point ratio=0.8, fill=red!20, inner sep=0.1cm, align=center},
-    arr/.style={->, thick, >=stealth}
+    trigger/.style={rectangle, draw=red!75!black, fill=red!8, rounded corners=3pt, text width=11.2cm, minimum height=0.68cm, align=center, font=\footnotesize, line width=0.8pt},
+    info/.style={rectangle, draw=blue!70!black, fill=blue!8, rounded corners=3pt, text width=11.2cm, minimum height=0.68cm, align=center, font=\footnotesize, line width=0.7pt},
+    takers/.style={rectangle, draw=orange!80!black, fill=orange!8, rounded corners=3pt, text width=5.25cm, minimum height=2.5cm, align=left, font=\scriptsize, inner sep=6pt, line width=0.7pt},
+    makers/.style={rectangle, draw=cyan!75!black, fill=cyan!8, rounded corners=3pt, text width=5.25cm, minimum height=2.5cm, align=left, font=\scriptsize, inner sep=6pt, line width=0.7pt},
+    crash/.style={rectangle, draw=red!90!black, fill=red!16, rounded corners=3pt, text width=11.2cm, minimum height=0.68cm, align=center, font=\footnotesize, line width=1.0pt},
+    marginbox/.style={rectangle, draw=purple!80!black, fill=purple!8, rounded corners=3pt, text width=11.2cm, minimum height=0.68cm, align=center, font=\footnotesize, line width=0.8pt},
+    arr/.style={-{Stealth[scale=0.95]}, thick, draw=black!75},
+    fbarr_red/.style={-{Stealth[scale=0.95]}, thick, dashed, draw=red!85!black},
+    fbarr_blue/.style={-{Stealth[scale=0.95]}, thick, dashed, draw=cyan!80!black}
 ]
-    \node[shock] (macro) {Exogenous\\Macro Shock};
-    
-    \node[box] (info) [below=of macro] {Information Asymmetry\\\& Sentiment Decay};
-    \node[box] (retail) [below left=of info] {Retail Panic Selling\\(Market Orders)};
-    \node[box] (amm) [below right=of info] {AMM Liquidity\\Withdrawal};
-    
-    \node[box, fill=red!10] (crash) [below right=of retail, xshift=-1cm] {Flash Crash\\(Price Dislocation)};
-    
-    \draw[arr] (macro) -- (info);
-    \draw[arr] (info) -- (retail);
-    \draw[arr] (info) -- (amm);
-    \draw[arr] (retail) -- (crash);
-    \draw[arr] (amm) -- (crash);
-    
-    \draw[arr, dashed, red] (crash.west) to[bend left=45] node[left] {Margin Calls (Feedback Loop)} (retail.west);
+    % 1. Exogenous Shock Header
+    \node[trigger] (shock) at (0, 0) {
+        \textbf{\normalsize Exogenous Macroeconomic Narrative Shock}\\[2pt]
+        \scriptsize Macro Orchestrator 70B Broadcast \quad $\cdot$ \quad Geopolitical / Regulatory Panic Regime
+    };
+
+    % 2. Information Asymmetry & Sentiment Decay (0.45cm below shock)
+    \node[info, below=0.45cm of shock] (info) {
+        \textbf{Information Asymmetry \& Non-Linear Sentiment Decay}\\[2pt]
+        \scriptsize Toxic Flow Spike ($\mu \to 1$) \quad $\cdot$ \quad Cognitive Belief Divergence \quad $\cdot$ \quad Panic Contagion
+    };
+
+    % 3. Dual Contagion Wings (0.55cm below info, aligned to outer edges)
+    \node[takers, below=0.55cm of info.south west, anchor=north west] (takers) {
+        \textbf{\small Retail Panic Selling}\\[1pt]
+        \textbf{\scriptsize (Aggressive Order Flow Takers)}\\[4pt]
+        $\bullet$ Aggressive Market Sell Orders\\[2pt]
+        $\bullet$ Sub-millisecond Stop Losses\\[2pt]
+        $\bullet$ Book Walking across Price Levels\\[2pt]
+        $\bullet$ Severe Execution Price Slippage
+    };
+
+    \node[makers, below=0.55cm of info.south east, anchor=north east] (makers) {
+        \textbf{\small Liquidity Withdrawal}\\[1pt]
+        \textbf{\scriptsize (Automated Market Makers)}\\[4pt]
+        $\bullet$ Spread Widening ($S = P_{\text{ask}} - P_{\text{bid}}$)\\[2pt]
+        $\bullet$ Bulk Cancellation of Limit Bids\\[2pt]
+        $\bullet$ Adverse Selection Defense\\[2pt]
+        $\bullet$ Evaporation of Resting Depth
+    };
+
+    % 4. Flash Crash Convergence (0.55cm below takers)
+    \path (takers.south) -- (makers.south) coordinate[midway] (wing_mid);
+    \node[crash, below=0.55cm of wing_mid] (crash) {
+        \textbf{\normalsize Severe Price Dislocation (Flash Crash)}\\[2pt]
+        \scriptsize Acute Liquidity Vacuum \quad $\cdot$ \quad Step-Function Price Collapse \quad $\cdot$ \quad Bid--Ask Gap Explosion
+    };
+
+    % 5. Systemic Margin Calls & Forced Liquidations (0.45cm below crash)
+    \node[marginbox, below=0.45cm of crash] (margin) {
+        \textbf{Systemic Amplification: Margin Deficits \& Liquidations}\\[2pt]
+        \scriptsize Clearinghouse Automated De-risking \quad $\cdot$ \quad Programmatic Fire Sales \quad $\cdot$ \quad Volatility Expansion
+    };
+
+    % 6. Forward Causal Connecting Arrows
+    \draw[arr] (shock) -- (info);
+    \draw[arr] (info.south -| takers.north) -- (takers.north);
+    \draw[arr] (info.south -| makers.north) -- (makers.north);
+    \draw[arr] (takers.south) -- (crash.north -| takers.south);
+    \draw[arr] (makers.south) -- (crash.north -| makers.south);
+    \draw[arr, line width=1.1pt, draw=red!80!black] (crash) -- (margin);
+
+    % 7. Bilateral Feedback Loops
+    % Left feedback: Margin calls trigger more taker market orders
+    \draw[fbarr_red] (margin.west) -- ++(-0.55, 0) |- (takers.west)
+        node[pos=0.25, left, align=right, font=\tiny\bfseries, text=red!85!black] {Involuntary\\Sell Feedback};
+
+    % Right feedback: Crash volatility forces market makers to widen spreads further
+    \draw[fbarr_blue] (margin.east) -- ++(0.55, 0) |- (makers.east)
+        node[pos=0.25, right, align=left, font=\tiny\bfseries, text=cyan!80!black] {Defensive\\Spread Feedback};
 
 \end{tikzpicture}
 \caption{The Causal Loop of a Flash Crash. Exogenous shocks create information asymmetry. As retail agents panic sell, market makers defensively withdraw liquidity, causing a price dislocation that triggers mechanical margin calls, further exacerbating the sell-off.}
 \label{fig:crash_loop}
 \end{figure}
 
-Figure \ref{fig:crash_loop} illustrates the complex, non-linear feedback loops inherent in a flash crash. Classical mathematical models struggle to capture the \textit{sentiment decay} phase---the precise moment when fear overrides financial logic. By replacing mathematical equations with stateful generative LLMs, AMPS introduces the necessary cognitive friction, allowing agents to experience confusion, panic, and irrational herding.
+Figure \ref{fig:crash_loop} illustrates the complex, non-linear feedback loops inherent in a flash crash. Classical mathematical models struggle to capture the \textit{sentiment decay} phase--the precise moment when fear overrides financial logic. By replacing mathematical equations with stateful generative LLMs, AMPS introduces the necessary cognitive friction, allowing agents to experience confusion, panic, and irrational herding.
 
 \section{Information Asymmetry and Toxic Flow}
 
-The core driver of market inefficiency is \textbf{Information Asymmetry}---a condition where some market participants possess material information before others. 
+The core driver of market inefficiency is \textbf{Information Asymmetry}--a condition where some market participants possess material information before others. 
 
 In a high-frequency trading environment, information asymmetry manifests as \textbf{Toxic Flow}. Toxic flow occurs when an informed trader executes a large order against an uninformed algorithmic market maker (AMM). Because the informed trader knows the true underlying value of the asset is about to drop (due to an exogenous shock), they aggressively sell. The AMM, lacking this exogenous information, continues to buy the asset at the resting limit order prices. This mathematically guarantees a loss for the AMM, a concept formally known as \textbf{Adverse Selection}.
 
