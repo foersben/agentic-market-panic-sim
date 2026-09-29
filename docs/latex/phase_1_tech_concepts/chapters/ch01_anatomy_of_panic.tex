@@ -7,7 +7,7 @@ A market panic--or flash crash--is not merely a rapid depreciation of asset pric
 
 \section{The Limitations of Rational Agent Models}
 
-In classical financial economics, specifically under the Efficient Market Hypothesis (EMH), actors are presumed to be perfectly rational utility-maximizers. Traditional macroeconomic models (such as Dynamic Stochastic General Equilibrium or DSGE models) rely heavily on representative agents who instantly update their beliefs using Bayes' theorem when presented with new information. 
+In classical financial economics, specifically under the Efficient Market Hypothesis (EMH), actors are presumed to be perfectly rational utility-maximizers. Traditional macroeconomic models (such as Dynamic Stochastic General Equilibrium or DSGE models) rely heavily on representative agents who instantly update their beliefs using Bayes' theorem when presented with new information \cite{ohara1995market}.
 
 While these models are mathematically elegant and perform well during periods of equilibrium, they structurally fail during crises. Real-world market participants suffer from bounded rationality. They face cognitive limits in processing massive streams of high-frequency data, they succumb to emotional contagion, and their execution is constrained by technological latency.
 
@@ -100,7 +100,7 @@ In a high-frequency trading environment, information asymmetry manifests as \tex
 
 \subsection{The Mechanics of Adverse Selection}
 
-Let $V$ represent the true fundamental value of an asset, which is a random variable. The market maker quotes a Bid price $B$ and an Ask price $A$. Let $\mu$ be the probability that an incoming trader is an \textit{informed} trader (possessing toxic flow), and $(1-\mu)$ be the probability the trader is \textit{uninformed} (noise trader).
+Let $V$ represent the true fundamental value of an asset, which is a random variable. The market maker quotes a Bid price $B$ and an Ask price $A$. Let $\mu$ be the probability that an incoming trader is an \textit{informed} trader (possessing toxic flow), and $(1-\mu)$ be the probability the trader is \textit{uninformed} (noise trader). This Bayesian formulation of informed trader probability and its adverse impact on market maker profitability is grounded in the canonical Glosten-Milgrom model \cite{glosten1985bid}.
 
 If the AMM blindly maintains a tight spread $S = (A - B)$ during a panic where $\mu \to 1$, the expected profit of the AMM becomes deeply negative:
 \begin{equation}

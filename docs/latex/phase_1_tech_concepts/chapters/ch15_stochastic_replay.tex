@@ -25,7 +25,7 @@ At the end of the tick, the \texttt{Write Buffer} is swapped to become the new \
 
 Because the \texttt{Write Buffer} captures the absolute, final, immutable truth of every entity's state at the end of the tick, AMPS streams this buffer directly to disk.
 
-Instead of writing to a slow SQL database or an inefficient JSON file, the simulation utilizes \textbf{Zarr}. Zarr is a cloud-native, chunked, compressed, N-dimensional array storage format. Because the ECS state is already formatted as dense NumPy arrays, streaming them to Zarr incurs almost zero serialization overhead.
+Instead of writing to a slow SQL database or an inefficient JSON file, the simulation utilizes \textbf{Zarr} \cite{zarr2023dev}. Zarr is a cloud-native, chunked, compressed, N-dimensional array storage format. Because the ECS state is already formatted as dense NumPy arrays, streaming them to Zarr incurs almost zero serialization overhead.
 
 \begin{figure}[htbp]
 \centering

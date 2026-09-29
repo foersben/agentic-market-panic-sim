@@ -13,7 +13,7 @@ Every time the kernel switches from one thread to another, it incurs a \textit{C
 
 To resolve this, AMPS abandons OS-level multithreading entirely in favor of \textbf{Cooperative Multitasking}. Python's \texttt{asyncio} module operates on a single OS thread. Instead of the kernel forcibly interrupting agents, agents explicitly yield control of the CPU when they are waiting for I/O (such as waiting for the GPU to finish LLM inference or waiting for a timer to expire).
 
-While the default Python \texttt{asyncio} event loop is a massive improvement over multithreading, it is written in pure Python and remains relatively slow. AMPS replaces the default loop with \textbf{\texttt{uvloop}}.
+While the default Python \texttt{asyncio} event loop is a massive improvement over multithreading, it is written in pure Python and remains relatively slow. AMPS replaces the default loop with \textbf{\texttt{uvloop}} \cite{selivanov2016uvloop}.
 
 \texttt{uvloop} is a Cython wrapper around \texttt{libuv} (the ultra-fast C library that powers Node.js). Under the hood, \texttt{uvloop} hooks directly into the operating system's lowest-level I/O notification facilities--specifically the \texttt{epoll} system call on Linux. This paradigm shift allows the single Python thread to monitor thousands of agent states simultaneously in the C-kernel with practically zero polling overhead.
 
@@ -23,7 +23,7 @@ Even with \texttt{uvloop}, AMPS faces a critical systems engineering crisis duri
 
 When the 70B Macro God Agent broadcasts a severe, systemic market shock (e.g., ``Major Bank Files for Bankruptcy''), all 400 micro-agents wake up simultaneously. They all instantly attempt to query the local RTX 5070 Ti GPU for generative inference to decide whether to panic sell. This instantaneous, massive spike in I/O demand is known as a \textbf{Cache Stampede} or a "Thundering Herd."
 
-Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16GB of VRAM and crash the CUDA kernels. To mitigate this fatal bottleneck, AMPS implements the \textbf{Singleflight} request coalescing pattern.
+Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16GB of VRAM and crash the CUDA kernels. To mitigate this fatal bottleneck, AMPS implements the \textbf{Singleflight} request coalescing pattern \cite{colakel2026singleflight}.
 
 \begin{figure}[htbp]
 \centering

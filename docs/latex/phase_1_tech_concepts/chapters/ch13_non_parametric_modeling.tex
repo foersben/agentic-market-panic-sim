@@ -11,17 +11,17 @@ During a panic, asset returns are not normally distributed; they exhibit ``fat t
 
 \section{Kernel Ridge Regression (KRR)}
 
-To evaluate the LOB dynamics without forcing parametric assumptions, AMPS utilizes \textbf{Non-Parametric Modeling} techniques, specifically Kernel Ridge Regression (KRR).
+To evaluate the LOB dynamics without forcing parametric assumptions, AMPS utilizes \textbf{Non-Parametric Modeling} techniques, specifically Kernel Ridge Regression (KRR) with diagonal adaptive kernel formulations \cite{li2025diagonal}.
 
 In KRR, we do not assume a specific shape (like a linear or quadratic curve) for the relationship between the Order Flow Imbalance (OFI) and the resulting price impact. Instead, we project the massive, nonlinear financial data into an infinite-dimensional feature space using a mathematical ``Kernel'' (typically the Radial Basis Function or Gaussian Kernel). 
 
-By analyzing the LOB data in this infinite-dimensional space, the engine can discover the true, highly complex relationship between an agent's toxic market order and the subsequent withdrawal of liquidity by the AMMs, without assuming that relationship follows a normal distribution. 
+By analyzing the LOB data in this infinite-dimensional space, the engine can discover the true, highly complex relationship between an agent's toxic market order and the subsequent withdrawal of liquidity by the AMMs, without assuming that relationship follows a normal distribution. Furthermore, diagonal adaptive kernel models dynamically adjust to non-equilibrium regime shifts and extreme order flow volatility during a panic without imposing restrictive parametric assumptions.
 
 \section{Non-Parametric Instrumental Variables (NPIV)}
 
 A massive confounding issue in market microstructure is \textbf{Endogeneity}. When an AMM widens its spread, does it do so because the price is volatile, or is the price volatile \textit{because} the AMM widened its spread? This bidirectional causality makes it impossible to directly measure the impact of the Macro God Agent's narrative shock on the Limit Order Book.
 
-To solve this, AMPS employs \textbf{Non-Parametric Instrumental Variables (NPIV)}. An Instrumental Variable is a mathematically isolated data point that affects the input (the agent's trading volume) but has absolutely no direct correlation with the output (the LOB spread), except through the input itself. 
+To solve this, AMPS employs \textbf{Non-Parametric Instrumental Variables (NPIV)} \cite{mingdu2024npiv}. An Instrumental Variable is a mathematically isolated data point that affects the input (the agent's trading volume) but has absolutely no direct correlation with the output (the LOB spread), except through the input itself. 
 
 In AMPS, the \textbf{Randomly Assigned API Rate Limit Throttle (e.g., simulated HTTP 429 delays)} acts as the perfect Instrument. 
 \begin{itemize}

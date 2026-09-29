@@ -11,7 +11,7 @@ At 1,000 updates per second, this JSON parsing and Virtual DOM reconciliation in
 
 \section{Binary WebSockets and HTML5 Canvas}
 
-To resolve this, AMPS delegates all state management to the backend FastAPI server and utilizes a strict binary protocol.
+To resolve this, AMPS delegates all state management to the backend FastAPI server and utilizes a strict binary protocol. FastAPI is built on top of the \texttt{uvloop} event loop \cite{selivanov2016uvloop}, delivering near-C throughput for async I/O operations.
 
 When the AMPS engine computes a tick, it bypasses JSON serialization entirely. The engine packs the LOB arrays into a compact, fixed-width binary C-struct and transmits this raw byte array over the WebSocket. On the client side, standard JavaScript \texttt{DataView} objects read the incoming bytes directly into memory without any parsing overhead.
 

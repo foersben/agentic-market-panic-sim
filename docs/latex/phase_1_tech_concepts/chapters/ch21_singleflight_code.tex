@@ -1,7 +1,7 @@
 \chapter{Reference Implementation: Singleflight Coalescing}
 \label{ch:reference_singleflight}
 
-This appendix provides the reference Python implementation for the Singleflight Request Coalescing architecture discussed in Chapter 8. This exact code is utilized within the AMPS \texttt{asyncio} event loop to prevent GPU cache stampedes when hundreds of agents simultaneously request inference for identical macroeconomic shocks.
+This appendix provides the reference Python implementation for the Singleflight Request Coalescing architecture \cite{colakel2026singleflight} discussed in Chapter 8. This exact code is utilized within the AMPS \texttt{asyncio} event loop to prevent GPU cache stampedes when hundreds of agents simultaneously request inference for identical macroeconomic shocks.
 
 \section{The Singleflight Mutex Map}
 

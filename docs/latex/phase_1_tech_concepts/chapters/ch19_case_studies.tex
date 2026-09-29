@@ -48,10 +48,10 @@ $T_0 + 50$ ms & Ask Depth ($L_1 \dots L_5$) & $50,000$ & $0$ (Complete depletion
 $T_0 + 100$ ms & Best Ask ($P_{ask}^{(1)}$) & $\$50.00$ & $\$55.00$ (+10\% Gap up) \\
 $T_0 + 250$ ms & LULD Circuit Breaker & \texttt{False} & \texttt{True} (Trading Halted) \\ \bottomrule
 \end{tabular}
-\caption{The Short Squeeze Data-Flow Matrix. Notice the instantaneous depletion of Ask depth and the mechanical triggering of the Limit Up-Limit Down (LULD) circuit breaker.}
+\caption{The Short Squeeze Data-Flow Matrix. Notice the instantaneous depletion of Ask depth and the mechanical triggering of the Limit Up--Limit Down (LULD) circuit breaker.}
 \end{table}
 
-The most critical assertion here is at $T_0 + 250$ ms. The test suite verifies that the Numba JIT engine correctly identifies the 10\% price gap and mathematically enforces the Limit Up-Limit Down (LULD) halt (as discussed in Chapter 3), pausing all state transitions.
+The most critical assertion here is at $T_0 + 250$ ms. The test suite verifies that the Numba JIT engine correctly identifies the 10\% price gap and mathematically enforces the Limit Up--Limit Down (LULD) halt \cite{sec2012luld} (as discussed in Chapter 3), pausing all state transitions.
 
 \section{Case Study 3: The Fat-Finger Anomaly}
 

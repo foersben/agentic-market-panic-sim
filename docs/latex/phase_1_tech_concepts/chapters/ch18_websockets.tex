@@ -14,12 +14,12 @@ If the user's web browser experiences a network hiccup or a Wi-Fi latency spike,
 To ensure the simulation never blocks on network I/O, AMPS implements a strict architectural decoupling using \textbf{Redis Publish/Subscribe (PubSub)}.
 
 \subsection{The Publisher (Simulation Engine)}
-At the end of every tick, after the Write Buffer has been committed to Zarr (Chapter 15), a dedicated telemetry thread reads the immutable LOB state. It packs this state into a binary C-struct. Instead of sending this to a WebSocket, it executes a fire-and-forget publish command to a local Redis server (e.g., \texttt{PUBLISH amps\_telemetry 0x...}). 
+At the end of every tick, after the Write Buffer has been committed to Zarr \cite{zarr2023dev} (Chapter~15), a dedicated telemetry thread reads the immutable LOB state. It packs this state into a binary C-struct. Instead of sending this to a WebSocket, it executes a fire-and-forget publish command to a local Redis server (e.g., \texttt{PUBLISH amps\_telemetry 0x...}). 
 
 Because Redis is entirely in-memory and operates locally via Unix domain sockets, this publish action is practically instantaneous ($<0.1$ milliseconds) and never blocks.
 
 \subsection{The Subscriber (FastAPI Server)}
-The FastAPI web server, running on a completely separate Python process (and pinned to its own isolated CPU cores), maintains a continuous subscription to the Redis \texttt{amps\_telemetry} channel. 
+The FastAPI web server \cite{selivanov2016uvloop}, running on a completely separate Python process (and pinned to its own isolated CPU cores), maintains a continuous subscription to the Redis \texttt{amps\_telemetry} channel. 
 
 When a user opens the AMPS dashboard in their browser, they establish a WebSocket connection to the FastAPI server. 
 

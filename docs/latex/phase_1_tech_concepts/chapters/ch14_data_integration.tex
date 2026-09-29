@@ -5,7 +5,7 @@ While the theoretical mechanics of the Limit Order Book are sound, the physical 
 
 \section{The NASDAQ LOBSTER Licensing Constraint}
 
-In academic literature regarding market microstructure, the gold standard for high-frequency data is the LOBSTER dataset (Limit Order Book System--The Efficient Reconstructor). LOBSTER provides message-level, tick-by-tick reconstructions of the NASDAQ Limit Order Book. It captures every single order submission, cancellation, and execution with nanosecond precision.
+In academic literature regarding market microstructure, the gold standard for high-frequency data is the LOBSTER dataset (Limit Order Book System--The Efficient Reconstructor) \cite{huang2011lobster}. LOBSTER provides message-level, tick-by-tick reconstructions of the NASDAQ Limit Order Book. It captures every single order submission, cancellation, and execution with nanosecond precision.
 
 However, LOBSTER is built directly on proprietary NASDAQ Historical TotalView-ITCH data. Accessing this data requires signing NASDAQ's Global Subscriber Agreement, a strict commercial contract that explicitly prohibits the redistribution, hosting, or open-source sharing of the raw data. 
 
@@ -26,12 +26,13 @@ The end-user of AMPS is solely responsible for:
 
 \section{Alternative Datasets: ITCH-Parsed and hkgsas}
 
-For researchers who cannot access NASDAQ LOBSTER, the BYOD engine is modularly designed to ingest alternative, fully open-source equity datasets, provided they contain raw Level-3 (L3) message data. Datasets containing pre-processed features (like the FI-2010 benchmark) are fundamentally incompatible with AMPS, as they lack the individual order addition/cancellation events required to reconstruct the exact matching engine state.
+For researchers who cannot access NASDAQ LOBSTER, the BYOD engine is modularly designed to ingest alternative, fully open-source equity datasets, provided they contain raw Level-3 (L3) message data. Datasets containing pre-processed features (like the FI-2010 benchmark \cite{ntakaris2018fi2010}) are fundamentally incompatible with AMPS, as they lack the individual order addition/cancellation events required to reconstruct the exact matching engine state.
 
 The primary alternatives supported by AMPS are:
 \begin{itemize}
     \item \textbf{Open ITCH Parsers:} AMPS supports raw binary ITCH PCAP files sourced from academic depositories. Users can utilize the built-in Rust parser to convert these open binary dumps into the required LOBSTER-format CSVs.
-    \item \textbf{hkgsas/LOB:} A large-scale, high-frequency limit order book dataset from the Chinese stock market. It contains billions of ticks for over 2,000 equities, providing a robust baseline for simulating massive, market-wide contagion.
+    \item \textbf{hkgsas/LOB:} A large-scale, high-frequency limit order book dataset from the Chinese stock market \cite{hkgsas2020benchmark}. It contains billions of ticks for over 2,000 equities, providing a robust baseline for simulating massive, market-wide contagion.
+    \item \textbf{Optiver Realized Volatility:} High-frequency Level-2 order book updates reflecting top-of-book market maker liquidity withdrawal dynamics and short-term volatility prediction \cite{optiver2021realized}.
 \end{itemize}
 
 \section{Parsing to Memory: Bypassing Pandas}

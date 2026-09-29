@@ -13,6 +13,8 @@ Modern Intel processors, beginning with the ``Alder Lake'' architecture and cont
     \item \textbf{E-Cores (Gracemont):} 12 smaller, power-efficient cores designed for dense, highly threaded background tasks. They share a smaller L2 cache (4MB per 4-core cluster) and execute fewer instructions per clock (IPC), but provide massive aggregate throughput for parallel workloads.
 \end{itemize}
 
+Crucially, to maintain instruction set parity across these asymmetric cores, Intel physically fused off AVX-512 vector support on the Raptor Lake silicon die \cite{intel2026gracemont}. Attempting to issue 512-bit vector instructions triggers immediate hardware exceptions, mandating a strict architectural reliance on SSE4.2 and scalar bit manipulation intrinsics across the simulation loop.
+
 \subsection{The Danger of Thread Migration}
 
 In AMPS, the primary computational burden is fractured into two entirely different profiles. 
@@ -21,7 +23,7 @@ In AMPS, the primary computational burden is fractured into two entirely differe
 
 Because Gracemont E-Cores and Raptor Cove P-Cores share the same L3 cache on the die, unconstrained execution of the memory-bound micro-agents across the entire processor would rapidly thrash the L3 cache, starving the LOB engine of its essential data. Furthermore, if the Linux scheduler is allowed to natively manage these threads, it will inevitably migrate threads across P-Core and E-Core boundaries. When a thread migrates from a P-Core to an E-Core, its local L2 cache context is invalidated. In a financial matching engine aiming for 1,000 Ticks Per Second (TPS), this cache thrashing introduces catastrophic \textit{execution jitter}--stalling the LOB matching engine for milliseconds and destroying the temporal validity of the simulation.
 
-To mitigate this shared L3 cache thrashing on consumer hardware, AMPS bypasses enterprise solutions like Intel RDT CAT. Instead, it utilizes strict Linux \texttt{cgroups} and \texttt{numactl} memory policies to pin the E-Core matching engine's working set entirely within the localized 4MB L2 cache of the Gracemont cluster. By ensuring the LOB state arrays never exceed the L2 cache boundaries, the E-cores never need to fetch from the heavily contested L3 cache, granting them immunity from the P-core memory transversals.
+To mitigate this shared L3 cache thrashing on consumer hardware, AMPS bypasses enterprise solutions like Intel RDT CAT. Instead, it utilizes strict Linux \texttt{cgroups} v2 \cite{corbet2019cgroups} and \texttt{numactl} memory policies to pin the E-Core matching engine's working set entirely within the localized 4MB L2 cache of the Gracemont cluster. By ensuring the LOB state arrays never exceed the L2 cache boundaries, the E-cores never need to fetch from the heavily contested L3 cache, granting them immunity from the P-core memory transversals.
 
 \section{Strict NUMA-Style CPU Pinning}
 

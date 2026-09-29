@@ -39,7 +39,7 @@ Because Numba natively understands NumPy \texttt{dtype} configurations, it compi
 
 \section{The Apache Arrow C Data Interface}
 
-While \texttt{/dev/shm} works perfectly for simple intents, passing the massive, multi-dimensional LOB state matrix requires a more sophisticated memory format. AMPS leverages the \textbf{Apache Arrow C Data Interface}.
+While \texttt{/dev/shm} works perfectly for simple intents, passing the massive, multi-dimensional LOB state matrix requires a more sophisticated memory format. AMPS leverages the \textbf{Apache Arrow C Data Interface} \cite{apache_arrow_c_data}.
 
 Arrow provides a standardized, columnar memory format that acts as a low-level lingua franca for sharing tabular data at runtime. Instead of relying on the heavy \texttt{PyArrow} library, AMPS utilizes Python's \texttt{PyCapsule} objects. 
 
@@ -49,7 +49,7 @@ The Numba matching engine constructs the LOB state in Arrow's columnar format wi
 
 Handling concurrent memory access normally requires Mutex locks to prevent data corruption. However, Mutex locks force the operating system to pause threads, introducing massive latency.
 
-To resolve this, AMPS implements \textbf{Lock-Free Ring Buffers}. A ring buffer is a circular array of shared memory managed by atomic integer counters (a \texttt{head} pointer and a \texttt{tail} pointer). The matching engine pushes LOB updates to the \texttt{head}, and agents read from the \texttt{tail}.
+To resolve this, AMPS implements \textbf{Lock-Free Ring Buffers} \cite{calderon2026ipc}. A ring buffer is a circular array of shared memory managed by atomic integer counters (a \texttt{head} pointer and a \texttt{tail} pointer). The matching engine pushes LOB updates to the \texttt{head}, and agents read from the \texttt{tail}.
 
 When updating these atomic pointers, ownership of the CPU cache line holding the pointers is critical. If multiple CPU cores try to modify the pointer simultaneously, the CPU's MESI (Modified, Exclusive, Shared, Invalid) cache protocol will force the cache line to continuously bounce back and forth between the L1 caches of the physical cores, destroying throughput (a phenomenon known as \textit{False Sharing}). 
 

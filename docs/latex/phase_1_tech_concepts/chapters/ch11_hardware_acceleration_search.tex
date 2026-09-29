@@ -21,7 +21,7 @@ In an ideal hardware environment, calculating the popcount of massive binary arr
 
 However, AMPS is explicitly designed to run on the Intel Core i7-14700K. As discussed in Chapter 5, the 14700K utilizes a heterogeneous architecture combining Raptor Cove P-Cores and Gracemont E-Cores. While the massive P-Cores were physically designed to support AVX-512, Intel physically fused off (disabled) AVX-512 support across the entire die to ensure instruction-set parity with the Gracemont E-Cores (which are physically too small to house AVX-512 silicon).
 
-Therefore, any software attempting to call AVX-512 instructions (such as standard implementations of the FAISS vector database) will instantly crash with an \texttt{Illegal Instruction} error.
+Therefore, any software attempting to call AVX-512 instructions (such as standard implementations of the FAISS vector database) will instantly crash with an \texttt{Illegal Instruction} error \cite{intel2026gracemont}.
 
 \section{Exploiting the SSE4.2 \texttt{popcnt} Intrinsic}
 
@@ -51,7 +51,7 @@ The \texttt{POPCNT} instruction counts the number of set bits (1s) in a 64-bit i
 \label{fig:sse42_pipeline}
 \end{figure}
 
-To search the cache database efficiently, the Numba JIT engine utilizes the \texttt{llvmlite} library to inject the bare-metal LLVM IR instruction \texttt{llvm.ctpop.i64} directly into the Python code. 
+To search the cache database efficiently, the Numba JIT engine utilizes the \texttt{llvmlite} library \cite{numba_llvmlite_builder} to inject the bare-metal LLVM IR instruction \texttt{llvm.ctpop.i64} directly into the Python code. 
 
 When Numba compiles the loop, it forces the Gracemont E-cores to execute the hardware \texttt{POPCNT}. The engine loads the 128-bit vector as two 64-bit integers, executes two XORs, two \texttt{POPCNT}s, and an addition, calculating the exact semantic distance between the agent's current state and a historical state in under 5 CPU clock cycles. 
 

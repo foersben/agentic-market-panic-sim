@@ -1,7 +1,7 @@
 \chapter{Mechanics of the Limit Order Book}
 \label{ch:mechanics_lob}
 
-The Limit Order Book (LOB) is the central nervous system of modern financial markets. Unlike traditional quote-driven markets where designated dealers dictate prices, order-driven markets rely on the continuous, decentralized aggregation of limit orders from diverse market participants. This chapter formalizes the mechanics of the LOB, providing the mathematical and structural blueprint necessary to build the simulation's matching engine.
+The Limit Order Book (LOB) is the central nervous system of modern financial markets \cite{ohara1995market}. Unlike traditional quote-driven markets where designated dealers dictate prices, order-driven markets rely on the continuous, decentralized aggregation of limit orders from diverse market participants. This chapter formalizes the mechanics of the LOB, providing the mathematical and structural blueprint necessary to build the simulation's matching engine.
 
 \section{The Order Queue Architecture}
 
@@ -105,7 +105,7 @@ High-Frequency Trading (HFT) environments are characterized by massive cancellat
 
 \section{Price-Time Priority and The Matching Engine}
 
-When an aggressive market order arrives, the exchange's matching engine pairs it with resting limit orders. The universal standard for this process is \textbf{Price-Time Priority} (FIFO).
+When an aggressive market order arrives, the exchange's matching engine pairs it with resting limit orders. The universal standard for this process is \textbf{Price-Time Priority} (FIFO) \cite{huang2011lobster}.
 
 \begin{enumerate}
     \item \textbf{Price Priority:} Orders with superior prices (higher bids, lower asks) are always executed first.

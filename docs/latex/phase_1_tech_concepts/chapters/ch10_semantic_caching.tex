@@ -17,7 +17,7 @@ Converting a complex LOB state and a narrative shock into a vector typically req
 
 Storing millions of 1024-dimensional, 32-bit floating-point (FP32) vectors in memory quickly exhausts RAM. Furthermore, computing the Cosine Similarity between thousands of these vectors takes far too long for a microsecond-latency event loop.
 
-To compress this data, AMPS utilizes \textbf{Matryoshka Representation Learning (MRL)}. Traditional embedding models distribute semantic meaning evenly across all 1024 dimensions. MRL, however, forces the neural network to encode the most critical, broad semantic meaning into the very first few dimensions, with subsequent dimensions adding only fine-grained nuances (like a Russian Matryoshka nesting doll).
+To compress this data, AMPS utilizes \textbf{Matryoshka Representation Learning (MRL)} \cite{kusupati2022matryoshka}. Traditional embedding models distribute semantic meaning evenly across all 1024 dimensions. MRL, however, forces the neural network to encode the most critical, broad semantic meaning into the very first few dimensions, with subsequent dimensions adding only fine-grained nuances (like a Russian Matryoshka nesting doll).
 
 This allows the AMPS engine to safely truncate the 1024D vector down to its first 128 dimensions. This aggressive truncation preserves up to 85\% of the topological semantics while instantly reducing the memory and computational footprint by an order of magnitude.
 
@@ -60,7 +60,7 @@ However, in a 128-bit Hamming space, this extreme quantization noise introduces 
 
 Beyond caching, the inference engine itself must be heavily compressed to fit within the memory constraints of a single workstation. Standard LLMs utilize 16-bit floating-point (FP16) parameters. 
 
-AMPS employs ultra-low-bitwidth ternary quantization. By forcing the massive weight matrices of the neural network to assume only three discrete values ($-1, 0, 1$), the model consumes approximately 1.58 bits per parameter. This aggressive compression drastically reduces VRAM requirements for model weights. 
+AMPS employs ultra-low-bitwidth ternary quantization \cite{ma2024bitnet}. By forcing the massive weight matrices of the neural network to assume only three discrete values ($-1, 0, 1$), the model consumes approximately 1.58 bits per parameter. This aggressive compression drastically reduces VRAM requirements for model weights. 
 
 Maintaining individual Key-Value (KV) caches for 400 agent context windows requires approximately 40 GB of total memory. By utilizing an NVIDIA RTX 5070 Ti equipped with 16GB of VRAM, AMPS cannot pin all agent KV-caches directly in hardware memory simultaneously. 
 

@@ -14,13 +14,13 @@ When the God Agent generates an exogenous shock (e.g., an inflation report or a 
     \item \textbf{Retail Agents:} Lower-tier agents receive the pre-parsed JSON signal with a uniform random delay $\Delta t \in [0.5s, 3.0s]$, simulating slower retail news feeds and cognitive processing times. Note that all 400 micro-agents independently and simultaneously attempt to execute the Base Semantic Parsing prompt, relying on the Singleflight mechanism (Chapter 8) to coalesce the identical requests under the hood before applying delays to the returned JSON string. This ensures the GPU coalescing premise holds perfectly, as the single initial parse is requested simultaneously by the pipeline before any staggered delays are introduced.
 \end{itemize}
 
-This topology guarantees that panic initiates deterministically at the institutional level and trickles down to retail, perfectly mimicking the toxic flow dynamics outlined in the Glosten-Milgrom model (Chapter 3).
+This topology guarantees that panic initiates deterministically at the institutional level and trickles down to retail, perfectly mimicking the toxic flow dynamics outlined in the Glosten-Milgrom model \cite{glosten1985bid} (Chapter~3).
 
 \section{The Social Contagion Bus (The Small-World Graph)}
 
 Panic is not driven solely by objective macroeconomic news; it is heavily influenced by social observation. Retail traders observe the behavior of other retail traders (e.g., via Twitter, Reddit, or observing massive volume spikes) and adjust their own convictions.
 
-To model this, AMPS arranges the 400 micro-agents into a \textbf{Watts-Strogatz Small-World Network}. In a small-world graph, most agents are not connected to each other, but any agent can be reached from any other agent via a very small number of hops (nodes). 
+To model this, AMPS arranges the 400 micro-agents into a \textbf{Watts-Strogatz Small-World Network} \cite{park2023generative}. In a small-world graph, most agents are not connected to each other, but any agent can be reached from any other agent via a very small number of hops (nodes). 
 
 If a highly connected "Influencer" agent begins market selling aggressively based on a misinterpretation of a macro shock, the sentiment propagates rapidly through the local clusters. Even if the macro news is benign, the localized social panic can generate a massive, localized Order Flow Imbalance (OFI), forcing the Algorithmic Market Makers to widen their spreads defensively.
 
