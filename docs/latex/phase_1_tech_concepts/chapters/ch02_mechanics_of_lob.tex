@@ -1,0 +1,77 @@
+\chapter{Mechanics of the Limit Order Book}
+\label{ch:mechanics_lob}
+
+The Limit Order Book (LOB) is the central nervous system of modern financial markets. Unlike traditional quote-driven markets where designated dealers dictate prices, order-driven markets rely on the continuous, decentralized aggregation of limit orders from diverse market participants. This chapter formalizes the mechanics of the LOB, providing the mathematical and structural blueprint necessary to build the simulation's matching engine.
+
+\section{The Order Queue Architecture}
+
+At its core, a Limit Order Book is a dual-queue data structure. It aggregates the unexecuted intent of market participants into two distinct sides:
+\begin{itemize}
+    \item \textbf{The Bid Side ($B$):} Composed of buyers. Orders are sorted in descending order of price. The highest price a buyer is willing to pay is the \textit{Best Bid} ($P_{bid}^{(1)}$).
+    \item \textbf{The Ask Side ($A$):} Composed of sellers. Orders are sorted in ascending order of price. The lowest price a seller is willing to accept is the \textit{Best Ask} ($P_{ask}^{(1)}$).
+\end{itemize}
+
+The difference between the Best Ask and the Best Bid is the \textbf{Spread} ($S = P_{ask}^{(1)} - P_{bid}^{(1)}$). In a healthy, liquid market, the spread is extremely narrow (often a single tick). During a panic, the spread widens violently as liquidity evaporates.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    box/.style={draw, rectangle, minimum width=4cm, minimum height=0.6cm, align=center},
+    bid/.style={box, fill=green!15},
+    ask/.style={box, fill=red!15},
+    level/.style={font=\bfseries, text width=2cm, align=right}
+]
+    % Asks
+    \node[level] (l3a) {Level 3:};
+    \node[ask] (a3) [right=0.2cm of l3a] {Ask: \$100.03 \quad Vol: 1200};
+    
+    \node[level] (l2a) [below=0.1cm of l3a] {Level 2:};
+    \node[ask] (a2) [right=0.2cm of l2a] {Ask: \$100.02 \quad Vol: 500};
+    
+    \node[level] (l1a) [below=0.1cm of l2a] {Level 1 (Best):};
+    \node[ask] (a1) [right=0.2cm of l1a] {Ask: \$100.01 \quad Vol: 300};
+    
+    % Spread
+    \node (spread) [below=0.2cm of a1, font=\bfseries\large, text=blue!80!black] {Bid-Ask Spread: \$0.02};
+    
+    % Bids
+    \node[level] (l1b) [below=0.7cm of l1a] {Level 1 (Best):};
+    \node[bid] (b1) [right=0.2cm of l1b] {Bid: \$99.99 \quad Vol: 800};
+    
+    \node[level] (l2b) [below=0.1cm of l1b] {Level 2:};
+    \node[bid] (b2) [right=0.2cm of l2b] {Bid: \$99.98 \quad Vol: 250};
+    
+    \node[level] (l3b) [below=0.1cm of l2b] {Level 3:};
+    \node[bid] (b3) [right=0.2cm of l3b] {Bid: \$99.97 \quad Vol: 1500};
+
+\end{tikzpicture}
+\caption{A stylized snapshot of a Level 2 (L2) Limit Order Book showing 3 levels of depth. Resting limit orders provide passive liquidity to the market.}
+\label{fig:lob_structure}
+\end{figure}
+
+\section{Order Types and Market Execution}
+
+Market participants interact with the LOB through distinct order types, which fundamentally define whether they are \textit{makers} of liquidity or \textit{takers} of liquidity.
+
+\subsection{Limit Orders (Liquidity Provision)}
+A Limit Order specifies a price $p$ and a volume $v$. If the order cannot be immediately matched against the opposing side, it rests in the LOB. These resting orders provide the ``depth'' of the market. Participants who submit limit orders are compensated with the ability to trade at their specified price, but they bear \textbf{Execution Risk}---the risk that the market moves away and their order never fills.
+
+\subsection{Market Orders (Liquidity Consumption)}
+A Market Order specifies a volume $v$ but no price. It demands immediate execution and will aggressively match against the resting limit orders on the opposing side, starting at Level 1 and walking down the book (consuming depth) until the volume $v$ is entirely fulfilled. Market orders guarantee execution but suffer from \textbf{Slippage}---the degradation of average execution price as deeper levels of the book are consumed.
+
+\subsection{Cancellation and Modification}
+High-Frequency Trading (HFT) environments are characterized by massive cancellation rates (often exceeding 95\%). Algorithms continuously submit and cancel limit orders to probe for hidden liquidity or adjust to microsecond changes in momentum. The AMPS engine must support $O(1)$ cancellation latency to prevent simulation lockups.
+
+\section{Price-Time Priority and The Matching Engine}
+
+When an aggressive market order arrives, the exchange's matching engine pairs it with resting limit orders. The universal standard for this process is \textbf{Price-Time Priority} (FIFO).
+
+\begin{enumerate}
+    \item \textbf{Price Priority:} Orders with superior prices (higher bids, lower asks) are always executed first.
+    \item \textbf{Time Priority:} If multiple limit orders rest at the exact same price level, the order that was submitted chronologically earlier is executed first.
+\end{enumerate}
+
+To simulate this mathematically, the LOB state at time $t$ can be formalized as a sparse matrix or a discrete event vector. For generative agents, analyzing the raw event stream is cognitively overwhelming. Instead, AMPS utilizes a quantized state matrix $\mathbf{L}_t \in \mathbb{R}^{2d \times 2}$, where $d$ is the number of price levels tracked (e.g., $d=10$ levels of depth), containing the aggregated volume and price at each level.
+
+Understanding these mechanics is critical for Phase 2 of AMPS, where the matching engine is translated into contiguous memory arrays and executed branchlessly via Numba to achieve 1,000 TPS.

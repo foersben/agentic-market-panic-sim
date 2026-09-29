@@ -1,0 +1,104 @@
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{a4paper, margin=1.2in}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, calc, decorations.pathreplacing}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+
+% Formatting for code blocks
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!5},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green!50!black}
+}
+
+% Header/Footer styling
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Title Formatting
+\title{\Huge \textbf{Agentic Market Panic Simulator}\\[0.5cm] 
+\LARGE \textit{Bridging High-Frequency Market Microstructure and Generative AI}}
+\author{\Large Benjamin Förster \\ \textit{Systems Engineering \& Quantitative Finance}}
+\date{\today}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+The Agentic Market Panic Simulator (AMPS) addresses a critical gap in economic modeling: simulating the irrational, sentiment-driven dynamics of macroeconomic contagion at a microsecond scale. Utilizing a swarm of 400 generative Large Language Models (LLMs) interacting with a deterministic Limit Order Book (LOB), AMPS bridges behavioral finance and bare-metal high-performance computing. This book presents a cohesive architectural narrative detailing the empirical necessity of traditional finance datasets, the mitigation of computational bottlenecks via Singleflight request coalescing and zero-copy Apache Arrow data pipelines, and the hardware-level necessity of relying on AVX-512 \texttt{popcnt} intrinsics in SMP CPU topologies. Through Matryoshka Representation Learning and 1.58-bit ternary quantization, AMPS achieves latency-optimized generative simulation on high-end workstation hardware.
+
+\tableofcontents
+
+\mainmatter
+
+% Part I: Market Microstructure & Economic Theory
+\part{Market Microstructure \& Economic Theory}
+\include{chapters/ch01_anatomy_of_panic}
+\include{chapters/ch02_mechanics_of_lob}
+\include{chapters/ch03_algorithmic_market_making}
+\include{chapters/ch04_tradfi_vs_crypto}
+
+% Part II: High-Performance Systems Engineering
+\part{High-Performance Systems Engineering}
+\include{chapters/ch05_hardware_topography}
+\include{chapters/ch06_data_oriented_design}
+\include{chapters/ch07_zero_copy_ipc}
+\include{chapters/ch08_event_loops}
+
+% Part III: Cognitive Architectures & AI Topologies
+\part{Cognitive Architectures \& AI Topologies}
+\include{chapters/ch09_generative_swarms}
+\include{chapters/ch10_semantic_caching}
+\include{chapters/ch11_hardware_acceleration_search}
+\include{chapters/ch12_network_topologies}
+\include{chapters/ch13_non_parametric_modeling}
+
+% Part IV: Implementation & ML Ops Pipelines
+\part{Implementation \& Epistemology}
+\include{chapters/ch14_data_integration}
+\include{chapters/ch15_stochastic_replay}
+\include{chapters/ch16_epistemic_soundness}
+
+% Part V: Operational Dashboards & Matrices
+\part{Operational Dashboards \& Case Studies}
+\include{chapters/ch17_frontend}
+\include{chapters/ch18_websockets}
+\include{chapters/ch19_case_studies}
+
+% Part VI: Appendices
+\part{Appendices}
+\appendix
+\include{chapters/ch20_math_derivations}
+\include{chapters/ch21_singleflight_code}
+
+\backmatter
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

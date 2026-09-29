@@ -1,0 +1,48 @@
+\chapter{Zero-Latency WebSocket Streaming}
+\label{ch:websocket_streaming}
+
+With the binary C-structs packed on the server (Chapter 17), the network layer must safely transmit these payloads from the simulation's inner core to the web browser without introducing jitter into the financial matching engine. This chapter details the decoupling of the simulation loop from the network I/O loop using Redis PubSub.
+
+\section{The Threat of Network I/O Blocking}
+
+The Numba matching engine and the Agent \texttt{uvloop} are pinned to the Gracemont E-cores, executing tightly bound mathematics. If the matching engine attempts to write data directly to a WebSocket connection, it must wait for the TCP stack to acknowledge the packets. 
+
+If the user's web browser experiences a network hiccup or a Wi-Fi latency spike, the TCP socket's buffer fills up. The operating system will block the \texttt{write()} system call, pausing the thread until the buffer clears. This would instantaneously freeze the financial matching engine, destroying the temporal integrity of the simulation simply because a user's browser lagged.
+
+\section{Decoupling via Redis PubSub}
+
+To ensure the simulation never blocks on network I/O, AMPS implements a strict architectural decoupling using \textbf{Redis Publish/Subscribe (PubSub)}.
+
+\subsection{The Publisher (Simulation Engine)}
+At the end of every tick, after the Write Buffer has been committed to Zarr (Chapter 15), a dedicated telemetry thread reads the immutable LOB state. It packs this state into a binary C-struct. Instead of sending this to a WebSocket, it executes a fire-and-forget publish command to a local Redis server (e.g., \texttt{PUBLISH amps\_telemetry 0x...}). 
+
+Because Redis is entirely in-memory and operates locally via Unix domain sockets, this publish action is practically instantaneous ($<0.1$ milliseconds) and never blocks.
+
+\subsection{The Subscriber (FastAPI Server)}
+The FastAPI web server, running on a completely separate Python process (and pinned to its own isolated CPU cores), maintains a continuous subscription to the Redis \texttt{amps\_telemetry} channel. 
+
+When a user opens the AMPS dashboard in their browser, they establish a WebSocket connection to the FastAPI server. 
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    box/.style={draw, rectangle, rounded corners, minimum width=3cm, minimum height=1cm, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box, fill=green!10] (engine) {Numba Engine\\(E-Cores)};
+    \node[box, fill=red!10] (redis) [right=2cm of engine] {Redis PubSub\\(Unix Socket)};
+    \node[box, fill=yellow!10] (fastapi) [right=2cm of redis] {FastAPI Server\\(E-Cores)};
+    \node[box, fill=blue!10] (browser) [below=1.5cm of fastapi] {Browser\\(TCP WebSocket)};
+
+    \draw[arr] (engine) -- node[above] {Fire-and-Forget} (redis);
+    \draw[arr] (redis) -- node[above] {Async Sub} (fastapi);
+    \draw[arr] (fastapi) -- node[right] {Stream Binary} (browser);
+\end{tikzpicture}
+\caption{The Telemetry Network Decoupling. The matching engine is isolated from TCP network unreliability by dumping data instantly into Redis.}
+\label{fig:redis_pubsub}
+\end{figure}
+
+The FastAPI server acts as a massive fan-out multiplexer. It receives a single binary payload from Redis and concurrently broadcasts it across 10, 100, or 1,000 active WebSocket connections. 
+
+If a specific WebSocket connection becomes blocked due to bad network conditions, FastAPI will simply drop the stale packets for that specific user, ensuring that neither the Redis server nor the core matching engine ever experiences backpressure. This guarantees the simulation continues ticking relentlessly at 1,000 TPS, regardless of external observation constraints.

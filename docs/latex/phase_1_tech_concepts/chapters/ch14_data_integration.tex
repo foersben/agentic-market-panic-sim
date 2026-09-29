@@ -1,0 +1,43 @@
+\chapter{The BYOD Architecture and Data Ingestion}
+\label{ch:byod_architecture}
+
+While the theoretical mechanics of the Limit Order Book are sound, the physical implementation of AMPS requires massive amounts of historical, Level 2 (L2) market data to bootstrap the simulation. This chapter addresses the legal, logistical, and computational challenges of sourcing institutional-grade market data, detailing the necessity of a "Bring Your Own Data" (BYOD) architecture.
+
+\section{The NASDAQ LOBSTER Licensing Constraint}
+
+In academic literature regarding market microstructure, the gold standard for high-frequency data is the LOBSTER dataset (Limit Order Book System---The Efficient Reconstructor). LOBSTER provides message-level, tick-by-tick reconstructions of the NASDAQ Limit Order Book. It captures every single order submission, cancellation, and execution with nanosecond precision.
+
+However, LOBSTER is built directly on proprietary NASDAQ Historical TotalView-ITCH data. Accessing this data requires signing NASDAQ's Global Subscriber Agreement, a strict commercial contract that explicitly prohibits the redistribution, hosting, or open-source sharing of the raw data. 
+
+If the AMPS project were to include a subset of LOBSTER data within its GitHub repository, it would be in immediate violation of commercial copyright law, resulting in severe legal liabilities and a mandatory DMCA takedown.
+
+\section{The "Bring Your Own Data" (BYOD) Solution}
+
+To resolve this legal impass, AMPS employs a \textbf{Bring Your Own Data (BYOD)} architecture. The core simulation engine, including the parsers, the Numba JIT kernels, and the ECS arrays, is fully open-source and natively configured to process LOBSTER's specific \texttt{.csv} formats (the message file and the orderbook file).
+
+However, the repository itself ships with an empty \texttt{data/} directory, secured by a strict \texttt{.gitignore} policy to prevent accidental data commits. 
+
+The end-user of AMPS is solely responsible for:
+\begin{enumerate}
+    \item Acquiring their own legal access to LOBSTER or a similar institutional dataset.
+    \item Downloading the raw \texttt{.csv} files locally to their machine.
+    \item Pointing the AMPS configuration file (\texttt{config.yaml}) to their local directory path.
+\end{enumerate}
+
+\section{Alternative Datasets: ITCH-Parsed and hkgsas}
+
+For researchers who cannot access NASDAQ LOBSTER, the BYOD engine is modularly designed to ingest alternative, fully open-source equity datasets, provided they contain raw Level-3 (L3) message data. Datasets containing pre-processed features (like the FI-2010 benchmark) are fundamentally incompatible with AMPS, as they lack the individual order addition/cancellation events required to reconstruct the exact matching engine state.
+
+The primary alternatives supported by AMPS are:
+\begin{itemize}
+    \item \textbf{Open ITCH Parsers:} AMPS supports raw binary ITCH PCAP files sourced from academic depositories. Users can utilize the built-in Rust parser to convert these open binary dumps into the required LOBSTER-format CSVs.
+    \item \textbf{hkgsas/LOB:} A large-scale, high-frequency limit order book dataset from the Chinese stock market. It contains billions of ticks for over 2,000 equities, providing a robust baseline for simulating massive, market-wide contagion.
+\end{itemize}
+
+\section{Parsing to Memory: Bypassing Pandas}
+
+Ingesting 100 Gigabytes of tick-level \texttt{.csv} files into memory presents a final computational bottleneck. The standard Python data science library, \texttt{pandas}, is fundamentally unsuited for this task. \texttt{pandas} loads data into generic Python objects, consuming massive amounts of RAM overhead and failing to align the data into the dense, contiguous arrays required by our ECS architecture (Chapter 6).
+
+Instead, AMPS utilizes \textbf{Polars}. Polars is a blazingly fast DataFrame library written in Rust. It natively leverages the Apache Arrow memory format (crucial for our Zero-Copy IPC pipeline detailed in Chapter 7) and executes multi-threaded CSV parsing. 
+
+Polars bypasses the Python Global Interpreter Lock (GIL) and streams the LOBSTER CSV files directly into the contiguous NumPy arrays required by the Numba JIT matching engine, completing the ingestion phase in seconds rather than hours.

@@ -1,0 +1,63 @@
+\chapter{High-Frequency Event Loops}
+\label{ch:high_frequency_event_loops}
+
+Managing 400 autonomous Large Language Model agents as they asynchronously evaluate market states, compute semantic trajectories, and post limit orders presents a severe orchestration challenge. This chapter details the departure from standard Python multithreading in favor of cooperative multitasking via \texttt{asyncio}, the integration of the \texttt{uvloop} C-extension, and the implementation of Singleflight request coalescing to prevent catastrophic GPU cache stampedes.
+
+\section{The Multithreading Context-Switch Penalty}
+
+A naive implementation of AMPS might spawn a unique operating system thread for every generative agent. With 400 agents, the Linux kernel must continuously pause and resume these 400 threads to give them all time on the physical CPU cores. 
+
+Every time the kernel switches from one thread to another, it incurs a \textit{Context-Switch Penalty}. The CPU must save the exact state of its registers, clear the pipeline, load the new thread's registers, and warm up the L1 cache. With 400 threads constantly demanding execution, the kernel wastes enormous amounts of CPU cycles merely juggling the threads, utterly destroying the simulation's throughput and violating our microsecond latency budgets.
+
+\section{Cooperative Multitasking via \texttt{asyncio} and \texttt{uvloop}}
+
+To resolve this, AMPS abandons OS-level multithreading entirely in favor of \textbf{Cooperative Multitasking}. Python's \texttt{asyncio} module operates on a single OS thread. Instead of the kernel forcibly interrupting agents, agents explicitly yield control of the CPU when they are waiting for I/O (such as waiting for the GPU to finish LLM inference or waiting for a timer to expire).
+
+While the default Python \texttt{asyncio} event loop is a massive improvement over multithreading, it is written in pure Python and remains relatively slow. AMPS replaces the default loop with \textbf{\texttt{uvloop}}.
+
+\texttt{uvloop} is a Cython wrapper around \texttt{libuv} (the ultra-fast C library that powers Node.js). Under the hood, \texttt{uvloop} hooks directly into the operating system's lowest-level I/O notification facilities---specifically the \texttt{epoll} system call on Linux. This paradigm shift allows the single Python thread to monitor thousands of agent states simultaneously in the C-kernel with practically zero polling overhead.
+
+\section{Thundering Herd Mitigation (Singleflight Coalescing)}
+
+Even with \texttt{uvloop}, AMPS faces a critical systems engineering crisis during a simulated market panic. 
+
+When the 70B Macro God Agent broadcasts a severe, systemic market shock (e.g., ``Major Bank Files for Bankruptcy''), all 400 micro-agents wake up simultaneously. They all instantly attempt to query the local RTX 5070 Ti GPU for generative inference to decide whether to panic sell. This instantaneous, massive spike in I/O demand is known as a \textbf{Cache Stampede} or a "Thundering Herd."
+
+Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16GB of VRAM and crash the CUDA kernels. To mitigate this fatal bottleneck, AMPS implements the \textbf{Singleflight} request coalescing pattern.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    node distance=1.5cm,
+    agent/.style={circle, draw, fill=blue!10, minimum size=0.8cm},
+    lock/.style={rectangle, draw, fill=red!10, rounded corners, minimum height=1cm, align=center},
+    gpu/.style={rectangle, draw, fill=green!10, minimum height=1cm, align=center}
+]
+    \node[agent] (a1) {A1};
+    \node[agent] (a2) [below=0.2cm of a1] {A2};
+    \node[agent] (a3) [below=0.2cm of a2] {A3};
+    
+    \node[lock] (mutex) [right=1.5cm of a2] {Singleflight\\Mutex Map};
+    \node[gpu] (gpu) [right=1.5cm of mutex] {RTX 5070 Ti\\(Inference)};
+    
+    \draw[->, thick, >=stealth] (a1) -- node[above, scale=0.8] {1st Caller} (mutex);
+    \draw[->, dashed] (a2) -- node[below, scale=0.8] {Waits} (mutex);
+    \draw[->, dashed] (a3) -- node[below, scale=0.8] {Waits} (mutex);
+    
+    \draw[->, thick, >=stealth] (mutex) -- node[above, scale=0.8] {Compute} (gpu);
+    
+    \draw[->, thick, >=stealth, blue] (gpu.south) to[bend left=30] node[below, scale=0.8] {$O(1)$ Broadcast Promise} (a3.south east);
+\end{tikzpicture}
+\caption{Mechanics of Singleflight coalescing. The first agent locks the operation and executes it. All subsequent agents yield their context and await the broadcast result, completely flattening GPU utilization spikes.}
+\label{fig:singleflight_detail}
+\end{figure}
+
+Mechanistically, Singleflight operates as follows within the \texttt{asyncio} loop:
+\begin{enumerate}
+    \item \textbf{First Caller:} Agent 1 attempts to run inference based on the market shock. It acquires a non-blocking mutex lock, sees no active execution for this prompt, and creates a new \texttt{asyncio.Future} (a Promise). It registers this Promise in a global dictionary and yields control to wait for the GPU.
+    \item \textbf{Duplicate Callers:} Microseconds later, Agents 2 through 400 wake up and acquire the mutex. They detect the existing Promise in the dictionary, increment a duplicates counter, and instantly yield their execution context back to \texttt{uvloop}.
+    \item \textbf{Result Sharing:} When the GPU finishes processing Agent 1's prompt, Agent 1 resolves the Promise. This acts as a broadcast signal that instantly wakes the 399 sleeping agents in $O(1)$ time and hands them the zero-copy result. 
+\end{enumerate}
+
+This mechanism completely flattens CPU and GPU utilization during massive volatility spikes, preventing the simulation from crashing exactly when the panic dynamics are most critical.

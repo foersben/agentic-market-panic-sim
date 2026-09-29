@@ -33,7 +33,7 @@ To overcome the hostile routing topologies inherent to edge environments (such a
 
 Ubuntu 26.04 LTS ships with the Linux 7.0 kernel, formally promoting Rust support to stable. This architectural shift fundamentally simplifies GPU integration.
 
-* **Open Kernel Modules:** The system leverages NVIDIA's open-source kernel modules (`nvidia-driver-580-open`). This interfaces seamlessly with the RTX 5070 Ti hardware without relying on external PPAs or triggering legacy DKMS compilation conflicts.
+* **Open Kernel Modules:** The system leverages NVIDIA's open-source kernel modules (`nvidia-driver-610-open`). This interfaces seamlessly with the RTX 5070 Ti hardware without relying on external PPAs or triggering legacy DKMS compilation conflicts.
 * **Hardware Prerequisites:** Resizable BAR (ReBAR) is enabled and the Compatibility Support Module (CSM) is disabled in the motherboard BIOS to provide the host OS with unimpeded access to the GPU's memory address space.
 
 ## 4. Container Runtime & GPU Passthrough
@@ -41,7 +41,7 @@ Ubuntu 26.04 LTS ships with the Linux 7.0 kernel, formally promoting Rust suppor
 The cognitive engine (`llama-server`) runs within a containerized environment to strictly isolate its dependencies from the Numba simulation engine.
 
 * **Docker Engine:** The system utilizes the official Docker Engine Debian packages to guarantee compatibility and predictable daemon behavior.
-* **NVIDIA Container Toolkit:** The official container toolkit bridges the Docker runtime to the host GPU, enabling the Container Device Interface (CDI) passthrough required for high-throughput LLM inference.
+* **NVIDIA Container Toolkit (CDI):** We utilize the modern Container Device Interface (CDI) instead of legacy Docker `--gpus all` flags. CDI deterministically maps the exact `/dev/nvidia*` character devices into the container namespace without relying on messy runtime hooks. This provides the `llama-server` with native-speed, low-overhead access to the RTX 5070 Ti, maximizing token generation throughput.
 
 ## 5. CPU Topology Pinning (Heterogeneous Compute)
 
@@ -57,3 +57,10 @@ The execution environment is designed to be highly reproducible, completely bypa
 * **Package Management:** The repository utilizes `pixi` to lock Python, C++, and Rust binaries. This ensures the Numba JIT compilers and Cython `uvloop` bindings compile identically across both local development machines and the production server.
 * **VRAM Safety Margin:** The deployment stack explicitly configures the `llama-server` with `--mem-fraction-static 0.90`. This guarantees the 27B Swarm model leaves 1.6GB of VRAM free for the host OS and GBNF FSM masks, preventing Out-Of-Memory (OOM) crashes during concurrent tick cascades.
 * **Development Velocity:** During initial validation, the orchestrator utilizes a lightweight proxy model (e.g., Llama-3.1-8B) in place of the full 70B model. This reduces prefill latency to seconds, preserving development velocity during Limit Order Book integration.
+
+## 7. CI/CD Integration (GitHub Actions)
+
+To enable continuous integration without exposing the server to inbound internet traffic, the server operates as a Local Self-Hosted GitHub Actions Runner.
+
+* **Automated Pipelines:** The runner automatically triggers on every `git push`, executing linting (`ruff`), secret scanning, and deterministic Numba `Hypothesis` tests locally.
+* **Security Model:** The runner securely polls GitHub via outbound connections over the Tailscale network. Deployments to the edge hardware are locked behind strict GitHub Environment protection rules, requiring manual administrator approval before the pipeline can modify the live engine.

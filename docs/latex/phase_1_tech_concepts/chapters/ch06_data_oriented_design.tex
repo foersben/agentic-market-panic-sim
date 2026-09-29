@@ -1,0 +1,39 @@
+\chapter{Data-Oriented Design in Python}
+\label{ch:data_oriented_design}
+
+To model a financial panic across 400 generative agents executing at 1,000 Ticks Per Second, the software architecture must fundamentally align with the hardware topography discussed in Chapter 5. Standard Python development practices are notoriously slow, entirely unsuited for sub-microsecond execution constraints. This chapter details the departure from Object-Oriented Programming (OOP) in favor of Data-Oriented Design (DOD), and the utilization of Just-In-Time (JIT) compilation to run native machine code directly from Python.
+
+\section{The Failure of Object-Oriented Python}
+
+In a standard Object-Oriented Programming paradigm, a software engineer might define the Limit Order Book using a class-based hierarchy. An \texttt{Order} class would contain attributes like \texttt{price}, \texttt{volume}, and \texttt{agent\_id}. The \texttt{OrderBook} class would maintain a Python \texttt{list} or \texttt{dict} of these \texttt{Order} objects.
+
+While conceptually intuitive for humans, this architecture is a disaster for the CPU. In Python, everything is an object. A simple integer is not merely 4 bytes of memory; it is a full C-struct (\texttt{PyObject}) containing a reference count, type pointers, and the value itself. When these objects are instantiated, Python's memory allocator scatters them randomly across the heap.
+
+When the matching engine attempts to iterate through a list of \texttt{Order} objects to find a price match, the CPU encounters an array of pointers. It must dereference each pointer to find the actual object in memory. Because these objects are scattered, they cannot be loaded into the CPU's L1/L2 cache concurrently. Every pointer dereference causes a cache miss, forcing the CPU to stall while waiting for main memory. This completely destroys execution throughput.
+
+\section{Entity-Component-System (ECS) Architecture}
+
+To achieve maximum cache coherency and eliminate pointer chasing, AMPS adopts an Entity-Component-System (ECS) architecture, a pattern heavily utilized in high-performance video game engines but rarely seen in financial modeling.
+
+ECS fundamentally decouples state (data) from behavior (logic):
+\begin{itemize}
+    \item \textbf{Entities:} An entity (such as a specific order or a generative agent) is not an object. It is merely a unique integer ID (e.g., \texttt{Entity 402}).
+    \item \textbf{Components:} Data is stored in dense, flat, contiguous arrays. For example, instead of an \texttt{Order} object holding a price, there is a massive global NumPy array called \texttt{OrderPrices}, where the index corresponds to the Entity ID.
+    \item \textbf{Systems:} Logic resides in standalone functions that iterate over these contiguous arrays in tight, sequential loops.
+\end{itemize}
+
+By restructuring the Limit Order Book into an ECS format, all prices for all active orders exist sequentially in physical memory. When the CPU fetches the first price into the L1 cache, the hardware prefetcher automatically pulls in the next 15 prices sequentially, eliminating cache misses entirely.
+
+\section{Just-In-Time Compilation with Numba}
+
+While ECS provides the correct memory layout, standard Python loops still incur massive overhead due to dynamic typing and the Global Interpreter Lock (GIL). To execute the ECS arrays at bare-metal speeds, AMPS leverages \textbf{Numba}, an open-source JIT compiler that translates a subset of Python and NumPy code directly into fast machine code using the LLVM compiler library.
+
+By applying the \texttt{@njit} (No-Python JIT) decorator to the matching engine systems, Numba completely bypasses the Python interpreter. The Python dynamic types are stripped away, and the logic is compiled into highly optimized, statically typed LLVM Intermediate Representation (IR), executing at speeds comparable to native C or C++.
+
+\subsection{Branchless SIMD Execution}
+
+The true power of coupling ECS with Numba lies in the ability to leverage Single Instruction, Multiple Data (SIMD) vectorization. When the matching engine needs to check if 1,000 active limit orders have crossed the spread, an Object-Oriented engine would use an \texttt{if/else} statement inside a loop.
+
+In CPU architecture, \texttt{if/else} statements trigger the \textit{branch predictor}. If the CPU mispredicts which path the \texttt{if} statement will take, it must flush its entire execution pipeline, a massive penalty. 
+
+Because our data is arranged in flat NumPy arrays, we can execute \textbf{Branchless Programming}. Instead of using an \texttt{if} statement, we perform vectorized boolean operations across the entire array simultaneously. Numba detects these array operations and compiles them into AVX2 or SSE4.2 hardware instructions, evaluating the price-time priority of thousands of orders simultaneously without ever triggering a branch misprediction. This guarantees deterministic, microsecond-level execution for the financial core of AMPS.

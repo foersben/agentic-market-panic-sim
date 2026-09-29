@@ -1,0 +1,69 @@
+\chapter{Algorithmic Market Making \& Adverse Selection}
+\label{ch:algorithmic_market_making}
+
+If AMPS relied entirely on generative Large Language Models (LLMs) to provide resting liquidity, the simulated market would instantly collapse. The inherent latency of LLM inference---even when heavily quantized---is fundamentally incompatible with the continuous, microsecond-level quoting obligations required to maintain a functional spread. Therefore, the simulation architecture mandates the deployment of deterministic \textbf{Algorithmic Market Makers (AMMs)}. This chapter explores the mathematical logic driving these AMMs and how their defensive behaviors act as the primary catalyst for flash crashes.
+
+\section{The Function of the Market Maker}
+
+A market maker is an algorithmic agent designed to provide continuous liquidity to the market. It does this by simultaneously quoting both a Bid and an Ask price. The market maker does not hold a directional opinion on the true value of the asset; instead, its goal is to earn the \textit{Spread} (the difference between its Ask and its Bid) over thousands of round-trip trades.
+
+If the market maker buys at $\$99.99$ and immediately sells at $\$100.01$, it captures $\$0.02$ in risk-free profit. However, this theoretical profit is constantly threatened by two primary risks: \textbf{Inventory Risk} and \textbf{Adverse Selection}.
+
+\section{Inventory Risk and Mean Reversion}
+
+An AMM must maintain a balanced inventory. If the market experiences a temporary influx of retail sellers, the AMM will continuously buy the asset, accumulating a massive long position. If the price permanently drops, the AMM suffers catastrophic capital losses.
+
+To mitigate this, AMMs implement \textit{Inventory Control}. As their inventory of an asset grows linearly, they skew their quotes exponentially to attract the opposite order flow. 
+For example, if an AMM is dangerously long (holding too much of the asset), it will:
+\begin{itemize}
+    \item Lower its Bid price (to discourage further buying).
+    \item Lower its Ask price (to aggressively attract sellers and offload its inventory).
+\end{itemize}
+
+While inventory control is critical for normal market equilibrium, it breaks down entirely during a macroeconomic panic, leading us to the concept of Adverse Selection.
+
+\section{Adverse Selection and Toxic Flow}
+
+Adverse Selection occurs when a market maker trades against an informed counterparty. In the context of AMPS, when the Macro God Agent broadcasts a severe negative shock, the "Whale" agents receive this information instantly. They generate \textbf{Toxic Flow}---aggressive market sell orders driven by deterministic knowledge that the asset is overvalued.
+
+\subsection{The Glosten-Milgrom Formulation}
+
+The classic Glosten-Milgrom model provides the mathematical framework for understanding how AMMs react to toxic flow. Let $V \in \{V_{low}, V_{high}\}$ be the true fundamental value of the asset, which is known to informed traders but unknown to the AMM. The AMM only observes the order flow.
+
+When the AMM observes an overwhelming ratio of sell orders to buy orders (an extreme Order Flow Imbalance, or OFI), its internal probability estimation that $V = V_{low}$ approaches $1.0$.
+
+To protect its capital, the AMM mathematically \textit{must} widen its spread $S$. The formula for the required spread to break even against informed traders is directly proportional to the probability of trading with an informed trader ($\mu$):
+
+\begin{equation}
+    S \propto \frac{\mu}{1 - \mu} \cdot \sigma_V
+\end{equation}
+
+where $\sigma_V$ represents the volatility of the asset's true value. As $\mu \to 1$ (representing a pure panic where all incoming flow is toxic), the required spread $S \to \infty$. 
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    box/.style={draw, rectangle, minimum width=3cm, minimum height=0.8cm, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box, fill=red!10] (toxic) {Toxic Order Flow\\(Whale Panic Selling)};
+    \node[box, fill=orange!10] (ofi) [below=0.8cm of toxic] {Severe Order Flow\\Imbalance (OFI) Detected};
+    \node[box, fill=yellow!10] (bayes) [below=0.8cm of ofi] {AMM Bayesian Update\\($P(V_{low}) \to 1.0$)};
+    \node[box, fill=blue!10] (withdraw) [below=0.8cm of bayes] {Exponential Spread\\Widening / Liquidity Void};
+    
+    \draw[arr] (toxic) -- (ofi);
+    \draw[arr] (ofi) -- (bayes);
+    \draw[arr] (bayes) -- (withdraw);
+\end{tikzpicture}
+\caption{The deterministic logic pipeline of an Algorithmic Market Maker under toxic flow conditions.}
+\label{fig:amm_logic}
+\end{figure}
+
+\section{Limit Up-Limit Down (LULD) Circuit Breakers}
+
+Because algorithms will perfectly execute Equation 3.1, a severe panic will cause the AMMs to instantly cancel all resting bids, creating a \textit{Liquidity Void}. If a generative retail agent submits a market sell order into a liquidity void, the order will execute at a price of $\$0.00$, destroying the market simulation.
+
+To prevent this, traditional finance (TradFi) exchanges implement regulatory \textbf{Circuit Breakers}, such as the Limit Up-Limit Down (LULD) mechanism. LULD explicitly pauses trading for 5 minutes if the price of an asset moves beyond a specified percentage band (e.g., 5\% or 10\%) within a rolling 5-minute window. 
+
+The inclusion of LULD dynamics is what strictly separates AMPS from unregulated cryptocurrency simulations, forcing the generative agents to comprehend regulatory halts and the physics of unexecutable panic.

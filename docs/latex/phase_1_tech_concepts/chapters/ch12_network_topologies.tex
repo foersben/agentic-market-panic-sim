@@ -1,0 +1,41 @@
+\chapter{Network Topologies of Panic}
+\label{ch:network_topologies}
+
+While Chapter 9 discussed the internal cognitive mechanics of the generative swarm, understanding how these agents interact \textit{with each other} is equally critical. Panic is rarely an isolated phenomenon; it is a highly infectious contagion that propagates across complex network topologies. This chapter outlines the three fundamental network graphs that govern information transmission and liquidity drain within AMPS.
+
+\section{The Macro Information Bus (The Broadcast Graph)}
+
+The first and most powerful network is the Macro Information Bus. This is a \textit{Directed Star Graph} centered entirely on the 70B Macro Orchestrator (the God Agent). 
+
+When the God Agent generates an exogenous shock (e.g., an inflation report or a geopolitical event), it broadcasts this signal simultaneously to all 400 micro-agents. However, as established in Chapter 9, the transmission is mathematically gated by each agent's \textit{Information Asymmetry Coefficient}.
+
+\begin{itemize}
+    \item \textbf{Institutional Whales:} High-tier agents receive the signal with zero delay and perfect clarity.
+    \item \textbf{Retail Agents:} Lower-tier agents receive the pre-parsed JSON signal with a uniform random delay $\Delta t \in [0.5s, 3.0s]$, simulating slower retail news feeds and cognitive processing times. Note that all 400 micro-agents independently and simultaneously attempt to execute the Base Semantic Parsing prompt, relying on the Singleflight mechanism (Chapter 8) to coalesce the identical requests under the hood before applying delays to the returned JSON string. This ensures the GPU coalescing premise holds perfectly, as the single initial parse is requested simultaneously by the pipeline before any staggered delays are introduced.
+\end{itemize}
+
+This topology guarantees that panic initiates deterministically at the institutional level and trickles down to retail, perfectly mimicking the toxic flow dynamics outlined in the Glosten-Milgrom model (Chapter 3).
+
+\section{The Social Contagion Bus (The Small-World Graph)}
+
+Panic is not driven solely by objective macroeconomic news; it is heavily influenced by social observation. Retail traders observe the behavior of other retail traders (e.g., via Twitter, Reddit, or observing massive volume spikes) and adjust their own convictions.
+
+To model this, AMPS arranges the 400 micro-agents into a \textbf{Watts-Strogatz Small-World Network}. In a small-world graph, most agents are not connected to each other, but any agent can be reached from any other agent via a very small number of hops (nodes). 
+
+If a highly connected "Influencer" agent begins market selling aggressively based on a misinterpretation of a macro shock, the sentiment propagates rapidly through the local clusters. Even if the macro news is benign, the localized social panic can generate a massive, localized Order Flow Imbalance (OFI), forcing the Algorithmic Market Makers to widen their spreads defensively.
+
+\section{The Financial Execution Bus (The Bipartite Graph)}
+
+The final topology is the physical execution of trades, which forms a \textbf{Bipartite Graph}. In a Bipartite Graph, nodes are divided into two disjoint sets, and edges can only connect a node in one set to a node in the other.
+
+In AMPS, the two sets are:
+\begin{enumerate}
+    \item \textbf{Generative Micro-Agents:} The liquidity takers (submitting market orders).
+    \item \textbf{Algorithmic Market Makers (AMMs) \& Designated Market Makers (DMMs):} The liquidity providers (resting limit orders).
+\end{enumerate}
+
+Agents do not trade directly with each other (as they would in an Over-The-Counter or Dark Pool environment). Every trade must route through the central Limit Order Book, where it crosses the Bid-Ask spread. 
+
+To ensure realistic stability, the Bipartite Graph also incorporates \textbf{TradFi Macro Stabilizer Logic}. Unlike pure crypto AMMs which blindly follow constant-product formulas, the simulation includes rule-based Designated Market Makers (DMMs) and ETF Arbitrageurs. When panic selling drains the standard AMM liquidity, these stabilizers inject counter-cyclical capital based on external fair-value formulas.
+
+This topology guarantees that all panic mathematically manifests as a massive, asymmetric stress test directly against both the algorithmic capital reserves and the TradFi macro stabilizers. When the combined capital is exhausted (or their risk limits breached), they withdraw from the bipartite graph, instantly collapsing the exchange.

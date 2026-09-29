@@ -15,6 +15,15 @@ repos:
     hooks:
     - id: gitleaks
 
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.43.0
+    hooks:
+      - id: markdownlint
+        # --fix will automatically remove trailing spaces (MD009) and fix heading blanks (MD022)
+        args: ["--fix"]
+        # Exclude our custom agent docs that might heavily rely on custom syntax if needed
+        # exclude: \.agents/
+
   # NEW: Catch typos in code and documentation
 
   - repo: https://github.com/codespell-project/codespell

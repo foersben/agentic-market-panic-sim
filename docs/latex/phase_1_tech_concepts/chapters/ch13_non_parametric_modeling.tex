@@ -1,0 +1,32 @@
+\chapter{Non-Parametric Modeling \& Causal Inference}
+\label{ch:non_parametric_modeling}
+
+A core empirical hurdle in simulating financial panic lies in validating the outcomes. How do we scientifically prove that a simulated 5\% flash crash accurately models the microstructural mechanics of a real-world event? Standard econometric models fail because they rely heavily on rigid parametric assumptions (e.g., normally distributed returns) that collapse entirely during black-swan events. This chapter details how AMPS relies on Non-Parametric Modeling and Causal Inference to bridge generative LLM outputs with rigorous empirical verification.
+
+\section{The Limitations of Parametric Models}
+
+Traditional mathematical finance is dominated by parametric models like the Black-Scholes options pricing model or Generalized Autoregressive Conditional Heteroskedasticity (GARCH) volatility models. These models force the data to fit a predefined mathematical equation with a fixed set of parameters. 
+
+During a panic, asset returns are not normally distributed; they exhibit ``fat tails'' (leptokurtosis) and massive skewness. The volatility is not a smooth continuous function; it is defined by violent, discontinuous jumps. If AMPS attempts to tune its generative agents using these parametric guardrails, the simulation will artificially constrain the panic, failing to replicate the true, chaotic breakdown of liquidity.
+
+\section{Kernel Ridge Regression (KRR)}
+
+To evaluate the LOB dynamics without forcing parametric assumptions, AMPS utilizes \textbf{Non-Parametric Modeling} techniques, specifically Kernel Ridge Regression (KRR).
+
+In KRR, we do not assume a specific shape (like a linear or quadratic curve) for the relationship between the Order Flow Imbalance (OFI) and the resulting price impact. Instead, we project the massive, nonlinear financial data into an infinite-dimensional feature space using a mathematical ``Kernel'' (typically the Radial Basis Function or Gaussian Kernel). 
+
+By analyzing the LOB data in this infinite-dimensional space, the engine can discover the true, highly complex relationship between an agent's toxic market order and the subsequent withdrawal of liquidity by the AMMs, without assuming that relationship follows a normal distribution. 
+
+\section{Non-Parametric Instrumental Variables (NPIV)}
+
+A massive confounding issue in market microstructure is \textbf{Endogeneity}. When an AMM widens its spread, does it do so because the price is volatile, or is the price volatile \textit{because} the AMM widened its spread? This bidirectional causality makes it impossible to directly measure the impact of the Macro God Agent's narrative shock on the Limit Order Book.
+
+To solve this, AMPS employs \textbf{Non-Parametric Instrumental Variables (NPIV)}. An Instrumental Variable is a mathematically isolated data point that affects the input (the agent's trading volume) but has absolutely no direct correlation with the output (the LOB spread), except through the input itself. 
+
+In AMPS, the \textbf{Randomly Assigned API Rate Limit Throttle (e.g., simulated HTTP 429 delays)} acts as the perfect Instrument. 
+\begin{itemize}
+    \item The predetermined, randomly assigned API rate limits exogenously throttle the Inference Cores' generative throughput, directly delaying when the agents submit massive volumes of orders.
+    \item However, the arbitrary simulation parameter defining an HTTP 429 delay has absolutely zero mechanical correlation with the exact microsecond-level bid-ask spread of the deterministic Limit Order Book matching engine.
+\end{itemize}
+
+By using NPIV algorithms (powered by the Numba JIT engine), the simulation can mathematically isolate the exact, causal price impact generated specifically by the \textit{exogenous information shock}, completely disentangling it from the mechanical feedback loop of the spread itself. This transforms AMPS from a simple Generative AI toy into a rigorous, verifiable econometric laboratory.

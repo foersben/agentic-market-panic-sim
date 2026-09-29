@@ -1,0 +1,48 @@
+\chapter{Front-End UI Architecture}
+\label{ch:frontend_architecture}
+
+A high-performance backend simulation is useless if researchers cannot observe and interact with the emergent chaos in real-time. Traditional Single Page Applications (SPAs) like React or Vue introduce massive client-side state management overhead, which struggles to render 1,000 ticks per second without severe browser lag. This chapter outlines the AMPS UI architecture, which completely abandons DOM-based rendering in favor of HTML5 Canvas and binary WebSockets.
+
+\section{The Failure of Client-Side State}
+
+In a standard React application, the backend would serialize the massive Limit Order Book (LOB) state into JSON and transmit it over a WebSocket. The browser's JavaScript engine would parse this massive JSON payload, update an internal Redux state tree, compute a Virtual DOM diff, and finally render the updates to the screen. 
+
+At 1,000 updates per second, this JSON parsing and Virtual DOM reconciliation instantly bottlenecks the V8 JavaScript engine. The browser tab consumes gigabytes of RAM and freezes, unable to keep pace with the Numba matching engine. Using server-side rendering tools like HTMX to swap HTML tables at 60 Hz presents a similar bottleneck, as forcing the browser to parse raw HTML strings and re-layout the DOM causes severe garbage collection stutter and layout thrashing.
+
+\section{Binary WebSockets and HTML5 Canvas}
+
+To resolve this, AMPS delegates all state management to the backend FastAPI server and utilizes a strict binary protocol.
+
+When the AMPS engine computes a tick, it bypasses JSON serialization entirely. The engine packs the LOB arrays into a compact, fixed-width binary C-struct and transmits this raw byte array over the WebSocket. On the client side, standard JavaScript \texttt{DataView} objects read the incoming bytes directly into memory without any parsing overhead.
+
+Instead of manipulating the DOM, the frontend utilizes an HTML5 \texttt{<canvas>} element driven by WebGL. The binary data is mapped directly to WebGL shaders, which render the order book as geometry (rectangles and lines) natively on the client's GPU.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    box/.style={draw, rectangle, rounded corners, minimum width=3.5cm, minimum height=1cm, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box, fill=blue!10] (engine) {Numba Engine\\(Mutates Arrays)};
+    \node[box, fill=yellow!10] (fastapi) [right=1.5cm of engine] {FastAPI\\(Packs C-Structs)};
+    \node[box, fill=green!10] (socket) [below=1cm of fastapi] {WebSocket\\(Binary Stream)};
+    \node[box, fill=orange!10] (browser) [left=1.5cm of socket] {Browser (WebGL)\\(\texttt{DataView} $\rightarrow$ Canvas)};
+
+    \draw[arr] (engine) -- (fastapi);
+    \draw[arr] (fastapi) -- (socket);
+    \draw[arr] (socket) -- (browser);
+\end{tikzpicture}
+\caption{The WebGL Rendering Pipeline. The browser avoids JSON parsing and Virtual DOM diffing; it merely unpacks binary bytes directly into GPU shaders, allowing for zero-lag visualization of high-frequency events.}
+\label{fig:webgl_pipeline}
+\end{figure}
+
+This completely eliminates client-side DOM overhead and layout thrashing, achieving perfect 60 frames per second visualization.
+
+\section{Draft State and Scenario Loading}
+
+Before the simulation begins, the researcher must configure the initial parameters (e.g., the severity of the macro shock, the number of agents, the starting LOB liquidity). 
+
+AMPS utilizes a dedicated \texttt{DraftService}. The user modifies parameters via HTML forms. HTMX POSTs these changes to the backend, which updates a server-side \texttt{DraftState} object in real-time and responds with the updated UI validation. 
+
+Only when the user clicks "Launch Simulation" does the FastAPI server execute the \texttt{POST /api/scenario/load-draft} endpoint. This locks the \texttt{DraftState}, initializes the contiguous NumPy arrays (Chapter 6), and physically pins the event loops to the E-cores (Chapter 5), irreversibly committing the parameters to the live simulation engine.

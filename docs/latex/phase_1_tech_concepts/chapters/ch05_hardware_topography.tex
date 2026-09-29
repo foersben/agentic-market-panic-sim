@@ -1,0 +1,63 @@
+\chapter{Bare-Metal Hardware Topography}
+\label{ch:hardware_topography}
+
+To simulate the microsecond-level mechanics of financial execution while simultaneously evaluating the cognitive states of 400 generative AI agents, the AMPS technology stack must abandon traditional cloud-native distributed microservices. Instead, it must dive into the physical realities of the underlying silicon. This chapter explains the bare-metal hardware topography required to guarantee strict determinism and ultra-low latency on a single consumer-grade workstation.
+
+\section{The Heterogeneous Core Architecture}
+
+The AMPS host machine is powered by an Intel Core i7-14700K processor. Historically, high-performance computing relied on Symmetric Multi-Processing (SMP) architectures, where every CPU core on the silicon die was physically identical, possessing the same instruction sets and cache hierarchies. The operating system's Completely Fair Scheduler (CFS) could freely migrate threads across any available core without concern for architectural differences.
+
+Modern Intel processors, beginning with the ``Alder Lake'' architecture and continuing into ``Raptor Lake'' (14700K), utilize a \textit{heterogeneous hybrid topology}. The die is physically partitioned into two entirely distinct microarchitectures:
+\begin{itemize}
+    \item \textbf{P-Cores (Raptor Cove):} 8 highly complex cores designed for maximum single-threaded throughput. They feature massive L2 caches (2MB per core), deep out-of-order execution windows, and advanced branch predictors. They consume significant wattage.
+    \item \textbf{E-Cores (Gracemont):} 12 smaller, power-efficient cores designed for dense, highly threaded background tasks. They share a smaller L2 cache (4MB per 4-core cluster) and execute fewer instructions per clock (IPC), but provide massive aggregate throughput for parallel workloads.
+\end{itemize}
+
+\subsection{The Danger of Thread Migration}
+
+In AMPS, the primary computational burden is fractured into two entirely different profiles. 
+1. The 400 micro-agents evaluating their generative semantic states. This is a memory-bound matrix multiplication workload running across the P-Cores. (Note: The 70B Macro Orchestrator God Agent is offloaded to an external API to preserve local resources).
+2. The Limit Order Book (LOB) matching engine. This is a latency-sensitive, highly-concurrent, branching workload.
+
+Because Gracemont E-Cores and Raptor Cove P-Cores share the same L3 cache on the die, unconstrained execution of the memory-bound micro-agents across the entire processor would rapidly thrash the L3 cache, starving the LOB engine of its essential data. Furthermore, if the Linux scheduler is allowed to natively manage these threads, it will inevitably migrate threads across P-Core and E-Core boundaries. When a thread migrates from a P-Core to an E-Core, its local L2 cache context is invalidated. In a financial matching engine aiming for 1,000 Ticks Per Second (TPS), this cache thrashing introduces catastrophic \textit{execution jitter}---stalling the LOB matching engine for milliseconds and destroying the temporal validity of the simulation.
+
+To mitigate this shared L3 cache thrashing on consumer hardware, AMPS bypasses enterprise solutions like Intel RDT CAT. Instead, it utilizes strict Linux \texttt{cgroups} and \texttt{numactl} memory policies to pin the E-Core matching engine's working set entirely within the localized 4MB L2 cache of the Gracemont cluster. By ensuring the LOB state arrays never exceed the L2 cache boundaries, the E-cores never need to fetch from the heavily contested L3 cache, granting them immunity from the P-core memory transversals.
+
+\section{Strict NUMA-Style CPU Pinning}
+
+To resolve the heterogeneous scheduling catastrophe, AMPS enforces rigid Non-Uniform Memory Access (NUMA)-style CPU pinning at the operating system level, explicitly bypassing the Linux CFS.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    core/.style={draw, rectangle, rounded corners, minimum width=4cm, minimum height=1.2cm, align=center},
+    mem/.style={draw, cylinder, shape border rotate=90, aspect=0.2, fill=yellow!20, minimum width=3cm, minimum height=1.5cm, align=center},
+    arr/.style={<->, thick, >=stealth, dashed}
+]
+    \node[core, fill=orange!20] (pcore) {Raptor Cove P-Cores\\(Cores 0--15)\\ \textbf{400 Micro-Agents Inference}};
+    \node[mem] (shm) [below=1.5cm of pcore] {\texttt{/dev/shm} Shared Memory\\(L3 Cache Boundary)};
+    \node[core, fill=cyan!20] (ecore) [below=1.5cm of shm] {Gracemont E-Cores\\(Cores 16--27)\\ \textbf{uvloop \& Numba LOB}};
+    
+    \draw[arr] (pcore) -- node[right] {Zero-Copy Output} (shm);
+    \draw[arr] (shm) -- node[right] {Zero-Copy Input} (ecore);
+\end{tikzpicture}
+\caption{Strict CPU isolation boundaries. The micro-agents are locked to the P-Cores to execute matrix multiplication, while the high-frequency matching engine is locked to the E-Cores, preventing L2 cache thrashing and minimizing L3 contention.}
+\label{fig:cpu_pinning_detail}
+\end{figure}
+
+By using the Linux \texttt{taskset} command (or \texttt{os.sched\_setaffinity} in Python), the simulation binds the micro-agents strictly to Cores 0-15 (the 8 hyper-threaded P-cores). Simultaneously, the \texttt{uvloop} event loop orchestrating the data pipelines, alongside the Numba JIT matching engine, is securely pinned to Cores 16-27 (the 12 E-cores). This physical isolation guarantees that the financial matching engine operates deterministically out of the Gracemont L2 cache, immune to the massive memory traversals occurring on the P-Cores.
+
+\section{Memory Paging and the TLB Penalty}
+
+Beyond core scheduling, memory mapping presents a severe bottleneck. Standard Linux memory allocation relies on 4 Kilobyte (KB) memory pages. 
+
+When the 400 micro-agents execute inference simultaneously, they allocate and continuously traverse over 12 Gigabytes of DDR5 RAM. Under a 4KB page paradigm, mapping 12GB of RAM requires the operating system to generate and maintain approximately 3 million individual virtual-to-physical page table entries. 
+
+The CPU relies on a hardware cache called the Translation Lookaside Buffer (TLB) to quickly resolve these virtual addresses to physical RAM addresses. However, the TLB on the i7-14700K can only hold a few thousand entries. Traversing 3 million pages forces the TLB to constantly evict and fetch new mappings from main memory, an expensive hardware interrupt known as a \textit{TLB Miss}. The aggregate latency of millions of TLB misses is known as the TLB penalty, which can degrade swarm inference speeds by upwards of 30\%.
+
+\subsection{Transparent HugePages (THP)}
+
+To eliminate the TLB penalty, the AMPS initialization sequence configures the Linux kernel to utilize \textbf{Transparent HugePages (THP)}. By utilizing the \texttt{madvise} system call within the LLM inference engine's memory allocator (e.g., \texttt{llama.cpp}), the OS shifts the allocation block size from 4KB to 2 Megabytes (MB).
+
+This structural shift reduces the page table footprint by a massive factor of 500 (from 3 million entries down to roughly 6,000). The TLB can now cache massive, contiguous blocks of the LLMs' neural network weights without thrashing, ensuring that the micro-agents can synthesize their orders without lagging the master simulation clock.

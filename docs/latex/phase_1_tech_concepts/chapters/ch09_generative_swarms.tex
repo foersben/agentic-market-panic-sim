@@ -1,0 +1,71 @@
+\chapter{Generative Agent Swarms}
+\label{ch:generative_agent_swarms}
+
+While the matching engine computes the mathematical reality of the simulation, the behavior of the market is driven entirely by the cognitive decisions of generative Large Language Models (LLMs). This chapter details the hierarchical architecture of the Agent Swarm, dividing the computational load between a massive, omniscient Macro Orchestrator and hundreds of localized, boundedly-rational micro-agents.
+
+\section{The 70B Macro Orchestrator (The God Agent)}
+
+At the apex of the simulation hierarchy sits the Macro Orchestrator, often referred to as the "God Agent." Powered by a massive 70-Billion parameter language model (e.g., Llama 3 70B), this agent is entirely decoupled from the high-frequency trading loop. It operates on a slower, macro timescale (e.g., ticking every 10 seconds).
+
+The primary responsibility of the God Agent is the synthesis of \textbf{Exogenous Narrative Shocks}. By continuously ingesting macroeconomic data, simulated geopolitical events, and historical templates from datasets like FinQA, the God Agent constructs coherent, cascading crises. 
+
+For example, rather than simply instructing agents to "sell," the God Agent generates a detailed SEC 8-K filing indicating systemic fraud at a major financial institution. This narrative is then broadcast to the ecosystem, forcing the micro-agents to independently parse the text, evaluate their portfolio exposure, and derive the logical financial action (panic selling).
+
+Because of its massive size, the 70B model requires over 40GB of VRAM/RAM for inference, making it impossible to run locally on a 16GB workstation GPU alongside the micro-agents without memory starvation. Therefore, the God Agent's inference is strictly offloaded to an external ultra-low latency API (e.g., Groq). It passes its generated output back down to the local simulation via high-speed WebSockets.
+
+\section{The 400 Micro-Agents (The Swarm)}
+
+Beneath the God Agent exists a swarm of 400 autonomous micro-agents. These agents act as the retail traders, institutional whales, and momentum algorithms that generate order flow.
+
+Due to the extreme constraint of running 400 models on a single RTX 5070 Ti (16GB VRAM), these micro-agents are instantiated using ultra-lightweight models (e.g., Qwen1.5-0.5B parameters). By applying 1.58-bit ternary quantization (detailed in Chapter 10), each agent's active memory footprint is compressed to mere megabytes, allowing all 400 to fit safely into local VRAM.
+
+\subsection{Narrative-to-Order Mapping}
+
+While the God Agent generates unstructured natural language (e.g., a simulated SEC 8-K), this text cannot be directly fed into the Limit Order Book. The micro-agents serve as the bridge. They ingest the narrative shock and are forced to output a strictly typed JSON schema (enforced via constrained decoding grammar). 
+
+The output schema strictly mandates:
+\begin{enumerate}
+    \item \texttt{action}: [BUY, SELL, HOLD]
+    \item \texttt{price\_offset}: Integer ticks from the current Best Bid/Ask.
+    \item \texttt{volume}: Integer number of shares based on their portfolio size.
+\end{enumerate}
+This JSON is parsed by the Python backend and instantly translated into a discrete C++ data struct, which is then injected into the Numba JIT order matching engine.
+
+\subsection{Bounded Rationality and Execution Friction}
+
+In reality, retail traders do not possess perfect information, nor do they process information instantly. The micro-agents are programmed with \textbf{Bounded Rationality}. They receive delayed, noisy subsets of the Macro Shock. Furthermore, their prompts are injected with distinct psychological profiles (e.g., Risk-Averse, Momentum-Chasing, Contrarian).
+
+When a shock occurs, a Momentum-Chasing agent might aggressively market-sell its entire portfolio instantly. A Contrarian agent might interpret the massive sell-off as a temporary liquidity gap and attempt to buy the dip, placing limit orders deep in the book.
+
+\section{Cognitive Drift and Reflexion Loops}
+
+A critical failure mode in multi-agent LLM simulations is \textbf{Model Collapse} or \textit{Behavioral Drift}. Over thousands of continuous interactions, agents often spiral into nonsensical loops of repetitive trading, buying and selling the exact same asset back and forth instantly, completely draining liquidity without any rational justification.
+
+To combat this, AMPS implements \textbf{Reflexion Loops}. Reflexion is a cognitive prompting architecture where the agent critiques its own past actions before committing to a new one.
+
+Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it must evaluate its \textit{Proposed Intent} against a sliding window of its past actions and its current Profit and Loss (PnL). 
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, transform shape,
+    box/.style={draw, rectangle, rounded corners, minimum width=3cm, minimum height=1cm, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box, fill=blue!10] (perceive) {1. Perceive LOB \& News};
+    \node[box, fill=yellow!10] (propose) [right=1.5cm of perceive] {2. Propose Trade};
+    \node[box, fill=orange!10] (critique) [below=1cm of propose] {3. Internal Critique\\(Check PnL / Repetition)};
+    \node[box, fill=green!10] (execute) [left=1.5cm of critique] {4. Execute to LOB};
+    \node[box, fill=red!10] (halt) [right=1.5cm of critique] {Halt \& Re-evaluate};
+
+    \draw[arr] (perceive) -- (propose);
+    \draw[arr] (propose) -- (critique);
+    \draw[arr] (critique) -- node[above] {Pass} (execute);
+    \draw[arr] (critique) -- node[above] {Fail} (halt);
+    \draw[arr, dashed] (halt.north) |- (perceive.east);
+\end{tikzpicture}
+\caption{The Reflexion Loop. Agents mathematically evaluate the rationality of their own outputs against their historical PnL before executing, preventing recursive model collapse.}
+\label{fig:reflexion_loop}
+\end{figure}
+
+If the internal critique deems the action overly repetitive (e.g., "I have sold this asset 5 times in the last 10 seconds without new information"), the agent self-corrects and suppresses the trade. This injects necessary behavioural friction into the system, ensuring that the simulated trading volume accurately mirrors human hesitation and risk management.
