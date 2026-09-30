@@ -257,4 +257,5 @@ data/
 *.snm
 *.nav
 *.vrb
+_minted*
 scratch/

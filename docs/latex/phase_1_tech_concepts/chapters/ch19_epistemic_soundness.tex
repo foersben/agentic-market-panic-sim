@@ -36,10 +36,14 @@ Gate 1 executes a static code scanner that parses the Python Abstract Syntax Tre
 \begin{enumerate}
     \item \textbf{AST Tree Crawling:} The scanner traverses all AST nodes within matching kernels, order processing routines, and vectorized MLP evaluations. If it detects standard control flow branching (\texttt{ast.If}, \texttt{ast.IfExp}) within hot execution loops, the build immediately aborts with a syntax invariant violation.
     \item \textbf{Branchless SIMD Mask Enforcement:} Developers are required to express state transitions and conditional logic strictly through float masking:
-    \begin{lstlisting}[language=Python, caption={Branchless Float Masking Invariant}]
+    \begin{listing}[htbp]
+    \caption{Branchless Float Masking Invariant.}
+    \label{listing:branchless_float_masking}
+    \begin{minted}{python}
 # Permitted branchless SIMD transfer
 fill_qty = desired_qty * (price <= best_ask_price) * is_alive_mask
-    \end{lstlisting}
+    \end{minted}
+    \end{listing}
     This guarantees that the Numba compiler generates branchless vector instructions (e.g., AVX2 \texttt{VANDPS}, \texttt{VMULPS}) rather than conditional branch jumps.
 \end{enumerate}
 
@@ -49,7 +53,7 @@ As mandated by Rule 05-A (\texttt{05-data-flow-invariants.md}), every theoretica
 
 The automated test runner (\texttt{scripts/verify\_matrix\_trace\_parity.py}) executes integration suites against mock event streams:
 \begin{enumerate}
-    \item The test harness parses the Markdown Data-Flow Matrices defined in \texttt{docs/scientific\_model/} into structured DataFrames.
+    \item The test harness parses the Markdown Data-Flow Matrices in \texttt{docs/scientific\allowbreak\_model/} into structured DataFrames.
     \item The Numba JIT matching engine executes against a deterministic synthetic event feed (bypassing online LLM generation).
     \item The runner asserts point-by-point, bitwise numerical parity between the documented table values, the in-memory Apache Arrow buffers, and the disk-backed Zarr telemetry arrays.
 \end{enumerate}
@@ -75,6 +79,7 @@ The most severe macroeconomic shock simulates the sudden insolvency of a Tier-1 
 
 \begin{table}[htbp]
 \centering
+\small
 \begin{tabular}{@{}llcc@{}}
 \toprule
 \textbf{Tick ($\Delta T$)} & \textbf{State Variable} & \textbf{Baseline Value} & \textbf{Expected Value} \\ \midrule
@@ -95,6 +100,7 @@ Market panic can manifest as an upward price explosion driven by forced short-co
 
 \begin{table}[htbp]
 \centering
+\small
 \begin{tabular}{@{}llcc@{}}
 \toprule
 \textbf{Tick ($\Delta T$)} & \textbf{State Variable} & \textbf{Baseline Value} & \textbf{Expected Value} \\ \midrule
@@ -115,6 +121,7 @@ Because the Macro Orchestrator has broadcast no macroeconomic shock, informed tr
 
 \begin{table}[htbp]
 \centering
+\small
 \begin{tabular}{@{}llcc@{}}
 \toprule
 \textbf{Tick ($\Delta T$)} & \textbf{State Variable} & \textbf{Baseline Value} & \textbf{Expected Value} \\ \midrule

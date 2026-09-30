@@ -23,14 +23,14 @@ Across all four archetypes, the total parameter count remains under 5 million FP
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.85, transform shape,
-    box/.style={draw, rectangle, rounded corners, minimum width=2.8cm, minimum height=1.1cm, align=center},
+    scale=0.74, transform shape,
+    box/.style={draw, rectangle, rounded corners, minimum width=2.6cm, minimum height=1.1cm, align=center},
     arr/.style={->, thick, >=stealth}
 ]
     \node[box, fill=blue!15] (state) {Agent State $S_t \in \mathbb{R}^{151}$\\(LOB, OFI, Inv, SIRC)};
-    \node[box, fill=purple!15] (arch) [right=1.2cm of state] {Archetype Demux\\($k \in \{\text{MM, IW, MS, NT}\}$)\\(INT8 VNNI Affinity)};
-    \node[box, fill=green!15] (mlp) [right=1.2cm of arch] {Quantized MLP\\($1.25\text{MB}$ / Archetype)\\(AVX2 / VNNI FMA)};
-    \node[box, fill=orange!15] (action) [right=1.2cm of mlp] {Action $A_t = (a, \Delta P, V)$\\(Sub-0.2 $\mu$s Latency)};
+    \node[box, fill=purple!15] (arch) [right=0.8cm of state] {Archetype Demux\\($k \in \{\text{MM, IW, MS, NT}\}$)\\(INT8 VNNI Affinity)};
+    \node[box, fill=green!15] (mlp) [right=0.8cm of arch] {Quantized MLP\\($1.25\text{MB}$ / Archetype)\\(AVX2 / VNNI FMA)};
+    \node[box, fill=orange!15] (action) [right=0.8cm of mlp] {Action $A_t = (a, \Delta P, V)$\\(Sub-0.2 $\mu$s Latency)};
 
     \draw[arr] (state) -- (arch);
     \draw[arr] (arch) -- (mlp);
@@ -49,7 +49,10 @@ While the neural network weights are globally shared across each archetype, indi
 To eliminate heap fragmentation and garbage collection pauses, AMPS allocates a contiguous, data-oriented state buffer for all 1,000,000 agents in host DDR5 memory. Each individual agent instance is strictly constrained to an isolated state footprint of less than 10 Kilobytes ($<10\text{ KB}$):
 
 \begin{equation}
-    \text{Size}(\text{AgentState}) = \text{Portfolio} (64\text{ B}) + \text{OpenOrders} (256\text{ B}) + \text{LocalHistory} (512\text{ B}) + \text{PaddedBuffer} \le 10\text{ KB}
+\begin{split}
+    \text{Size}(\text{AgentState}) &= \text{Portfolio} (64\text{ B}) + \text{OpenOrders} (256\text{ B}) \\
+    &\quad + \text{LocalHistory} (512\text{ B}) + \text{PaddedBuffer} \le 10\text{ KB}
+\end{split}
 \end{equation}
 
 Multiplying this per-agent buffer by 1,000,000 active instances yields a total system memory footprint of approximately 10.0 Gigabytes ($\sim 10.0\text{ GB}$) of DDR5 RAM. This allocation represents only 7.8\% of the 128GB physical memory available on the host workstation, leaving vast headroom for Zarr telemetry caches, `/dev/shm` shared memory rings, and the operating system kernel.
@@ -59,10 +62,13 @@ Multiplying this per-agent buffer by 1,000,000 active instances yields a total s
 A naive implementation of a 1,000,000-agent simulation would attempt to execute a neural policy forward pass for every single agent on every discrete microsecond tick. At a simulation clock of $100,000\text{ Ticks/Sec}$, synchronous evaluation would demand:
 
 \begin{equation}
-    1,000,000\text{ agents} \times 100,000\text{ ticks/sec} = 100,000,000,000\text{ (100 Billion) forward passes/sec}
+\begin{split}
+    &1,000,000\text{ agents} \times 100,000\text{ ticks/sec} \\
+    &\quad = 100,000,000,000\text{ (100 Billion) forward passes/sec}
+\end{split}
 \end{equation}
 
-Divided across 12 Gracemont E-cores, each core would be required to compute $8.33\text{ Billion passes/sec}$ -- equivalent to one forward pass every $0.12\text{ nanoseconds}$, demanding over $1,000\text{ TFLOPS}$ of compute. This exceeds the physical compute capacity of the 12 Gracemont E-cores ($\sim 0.5\text{ TFLOPS}$) by three orders of magnitude.
+Divided across 12 Gracemont E-cores, each core would face $8.33\times 10^9\text{ passes/sec}$ -- equivalent to one forward pass every $0.12\text{ ns}$ and demanding $>1,000\text{ TFLOPS}$ of compute. This exceeds the physical compute capacity of the 12 Gracemont E-cores ($\sim 0.5\text{ TFLOPS}$) by three orders of magnitude.
 
 To resolve this throughput paradox, AMPS implements an \textbf{Asynchronous Event-Driven Poisson Execution Queue}. In real-world financial markets, human traders and algorithmic trading systems do not re-quote on every single microsecond clock cycle. Instead, agent activation follows an asynchronous Poisson point process with state-dependent arrival intensity $\lambda_i(S_t, \Delta P_t)$:
 
@@ -107,7 +113,7 @@ The complete $1,000,000$-agent state array ($151 \times \text{FP32} \approx 604\
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.88, transform shape,
+    scale=0.80, transform shape,
     cluster/.style={draw, rectangle, rounded corners=4pt, align=center, font=\small, inner sep=6pt, minimum width=3.4cm},
     core/.style={draw, rectangle, fill=blue!10, font=\scriptsize, minimum width=0.6cm, minimum height=0.5cm},
     l2/.style={draw=green!70!black, fill=green!10, rectangle, rounded corners=2pt, font=\scriptsize, align=center, minimum width=3.2cm, minimum height=1.1cm},
@@ -143,7 +149,7 @@ The complete $1,000,000$-agent state array ($151 \times \text{FP32} \approx 604\
     % Shared DDR5 & Prefetcher
     \node[draw=purple!80!black, fill=purple!10, rectangle, rounded corners=3pt, font=\small, align=center, below=1.2cm of c1, minimum width=9.5cm] (ram) {
         \textbf{128GB DDR5 Host RAM (Full 1,000,000 Agent State Array: 604 MB)}\\
-        \footnotesize Software Prefetch (\texttt{\_mm\_prefetch}, \texttt{\_MM\_HINT\_T1}) 2 Ticks Ahead ($20\,\mu\text{s}$) $\implies$ Zero L3 Miss Stalls
+        \footnotesize Prefetch (\texttt{\_mm\_prefetch}) 2 Ticks Ahead ($20\,\mu\text{s}$) $\implies$ Zero L3 Miss Stalls
     };
 
     \draw[arr, dashed, purple!80!black] (ram.north -| c0.south) -- (c0.south);
@@ -160,7 +166,10 @@ A critical component of the 151-dimensional state vector $S_t$ is the 128-bit Ma
 
 Expanding 128 bits into 128 INT8 values requires exactly \textbf{four 256-bit YMM registers} ($4 \times 32\text{ bytes} = 128\text{ bytes}$). Out of the 16 YMM registers on AVX2, registers \texttt{YMM0} -- \texttt{YMM3} hold the active unpacked inputs, leaving 12 registers (\texttt{YMM4} -- \texttt{YMM15}) free for streaming INT8 weight matrices and VNNI accumulators (\texttt{\_mm256\_dpbusd\_epi32}), completely avoiding register spilling to the stack:
 
-\begin{lstlisting}[language=C, caption={AVX2 In-Register Bit Expansion of 128-bit SIRC Signatures to INT8}]
+\begin{listing}[htbp]
+\caption{AVX2 In-Register Bit Expansion of 128-bit SIRC Signatures to INT8.}
+\label{listing:avx2_bit_expansion}
+\begin{minted}{c}
 #include <immintrin.h>
 
 // Expands 32 packed bits into 32 INT8 values (+1 / -1) in one YMM register
@@ -182,6 +191,7 @@ __m256i expand_32bits_to_int8(uint32_t bits) {
     // In-register blend: +1 if bit is 1, -1 if bit is 0
     return _mm256_blendv_epi8(neg_one, pos_one, cmp_mask);
 }
-\end{lstlisting}
+\end{minted}
+\end{listing}
 
 This kernel unpacks all 128 bits directly into \texttt{YMM0} -- \texttt{YMM3} in under $8\text{ nanoseconds}$, zero-copy, with zero writes to host DRAM.

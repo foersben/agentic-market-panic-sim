@@ -7,14 +7,16 @@ This appendix provides the reference Python implementation for the Singleflight 
 
 The implementation relies on an \texttt{asyncio.Lock} to guarantee thread-safe mutations to an in-memory dictionary of active promises (\texttt{asyncio.Future}).
 
-\begin{lstlisting}[language=Python, caption={Reference Implementation of Singleflight Request Coalescing in Python}]
+\captionof{listing}{Reference Implementation of Singleflight Request Coalescing in Python.}
+\label{listing:singleflight_python}
+\begin{minted}{python}
 import asyncio
 from typing import Any, Callable, Coroutine, Dict, Tuple
 
 class Singleflight:
     """
-    Prevents GPU cache stampedes by coalescing simultaneous identical async calls 
-    into a single GPU inference execution pass.
+    Prevents GPU cache stampedes by coalescing simultaneous identical
+    async calls into a single GPU inference execution pass.
     """
     def __init__(self) -> None:
         # Maps a unique prompt hash to an active Future
@@ -30,14 +32,14 @@ class Singleflight:
         coro_fn: Callable[[], Coroutine[Any, Any, Any]]
     ) -> Tuple[Any, bool, int]:
         """
-        Execute an asynchronous call. If concurrent callers share the same key,
-        only the first caller executes coro_fn. Concurrent callers await the
-        first caller's Future in O(1) time.
+        Execute an asynchronous call. If concurrent callers share the
+        same key, only the first caller executes coro_fn. Concurrent
+        callers await the first caller's Future in O(1) time.
         
         Returns:
             Tuple containing:
             - The result of the coroutine
-            - Boolean flag indicating whether this caller executed the coroutine
+            - Flag indicating whether this caller executed the coroutine
             - Integer count of total callers sharing this evaluated result
         """
         async with self._lock:
@@ -67,7 +69,7 @@ class Singleflight:
         else:
             result = await future
             return result, False, 0
-\end{lstlisting}
+\end{minted}
 
 \section{Execution Metrics and GPU VRAM Preservation}
 

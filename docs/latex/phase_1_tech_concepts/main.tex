@@ -14,13 +14,28 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{listings}
+\usepackage{caption}
+\usepackage{minted}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{fancyhdr}
 
-% Formatting for code blocks
+% Formatting for minted code blocks
+\setminted{
+    fontsize=\footnotesize,
+    breaklines=true,
+    breakanywhere=false,
+    frame=lines,
+    framesep=2.5mm,
+    linenos=true,
+    numbersep=8pt,
+    tabsize=4
+}
+\captionsetup[listing]{position=top, skip=5pt, font=small, labelfont=bf}
+
+% Formatting for legacy listings fallback
 \lstset{
     basicstyle=\ttfamily\footnotesize,
     breaklines=true,

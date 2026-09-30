@@ -12,31 +12,46 @@ The architectural necessity for strict resource partitioning stems directly from
 
 Simultaneously, the Intel Core i7-14700K processor features a shared 30MB L3 cache across its performance and efficient cores. Unmanaged memory traversals across the host's 128GB DDR5 memory space continually evict critical Limit Order Book arrays from CPU cache lines. This phenomenon -- known as L3 cache thrashing -- introduces millisecond-level execution jitter, destroying the temporal validity of the financial engine.
 
-Table \ref{tab:hardware_budget_allocation} delineates the static physical hardware budget enforced across all AMPS subsystems for concurrent Tier 1 and Tier 2 execution.
+Tables \ref{tab:hardware_budget_allocation} and \ref{tab:vram_budget_allocation} delineate the static physical hardware budget enforced across host DDR5 RAM and dedicated GPU VRAM for concurrent Tier 1 and Tier 2 execution.
 
 \begin{table}[htbp]
 \centering
-\footnotesize
-\renewcommand{\arraystretch}{0.95}
-\begin{tabularx}{\textwidth}{l p{3.2cm} r X}
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\textwidth}{X r r}
 \toprule
-\textbf{Component} & \textbf{Hardware Memory Domain} & \textbf{Allocated Size} & \textbf{Capacity Utilization} \\
+\textbf{Host Memory Subsystem (128GB DDR5 RAM)} & \textbf{Allocated Size} & \textbf{Utilization (\% of 128GB)} \\
 \midrule
-1,000,000 Agent Instance State Buffers ($<$10KB/Agent) & Host DDR5 RAM & 10.00 GB & 7.8\% (of 128GB Host RAM) \\
-Shared Policy Archetype Weights ($<$5M Params) & Host DDR5 RAM & 0.02 GB & $<$0.1\% (of 128GB Host RAM) \\
-Tier 1 Micro-Agent LLM Weights (Qwen1.5-0.5B) & GPU VRAM (RTX 5070 Ti) & 1.80 GB & 11.3\% (of 16GB VRAM) \\
-Pinned GPU KV-Caches (Top Whales / AMMs) & GPU VRAM (RTX 5070 Ti) & 2.40 GB & 15.0\% (of 16GB VRAM) \\
-Offline PPO Student Batch Training Buffer & GPU VRAM (RTX 5070 Ti) & 1.80 GB & 11.3\% (of 16GB VRAM) \\
-Zarr Trajectory Caches & Host DDR5 RAM & 24.00 GB & 18.8\% (of 128GB Host RAM) \\
-POSIX \texttt{/dev/shm} Shared Memory \& Arrow Buffers & Host DDR5 RAM & 16.00 GB & 12.5\% (of 128GB Host RAM) \\
-OS Kernel, Linux cgroups v2 \& System Overhead & Host DDR5 RAM & 12.00 GB & 9.4\% (of 128GB Host RAM) \\
+1,000,000 Agent Instance State Arrays ($151 \times \text{FP32}$ contiguous buffers) & 10.00 GB & 7.8\% \\
+Shared Student Archetype Weights (4 Archetypes $\times$ 20KB INT8 models) & 0.02 GB & $<$0.1\% \\
+Zarr Telemetry \& Replay Buffers (Streaming NVMe ring cache) & 24.00 GB & 18.8\% \\
+POSIX \texttt{/dev/shm} Shared Memory \& Arrow IPC Buffers & 16.00 GB & 12.5\% \\
+OS Kernel, Linux cgroups v2 Core Isolation \& System Overhead & 12.00 GB & 9.4\% \\
 \midrule
-\textbf{Consolidated Host DDR5 RAM Utilization} & \textbf{Host DDR5 RAM} & \textbf{62.02 GB} & \textbf{48.4\% (65.98 GB Headroom)} \\
-\textbf{Consolidated GPU VRAM Utilization} & \textbf{GPU VRAM (RTX 5070 Ti)} & \textbf{6.00 GB} & \textbf{37.5\% (10.00 GB Headroom)} \\
+\textbf{Total Pinned Host DDR5 RAM Utilization} & \textbf{62.02 GB} & \textbf{48.4\% (65.98 GB Headroom)} \\
 \bottomrule
 \end{tabularx}
-\caption{Workstation physical memory budget allocation across host DDR5 RAM and dedicated GPU VRAM for concurrent Tier 1 generative teacher and Tier 2 distilled swarm execution (1,000,000 agents).}
+\caption{Host DDR5 physical RAM allocation budget across AMPS subsystems on fixed workstation silicon (128GB total physical capacity).}
 \label{tab:hardware_budget_allocation}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\textwidth}{X r r}
+\toprule
+\textbf{Dedicated GPU VRAM Subsystem (16GB RTX 5070 Ti)} & \textbf{Allocated Size} & \textbf{Utilization (\% of 16GB)} \\
+\midrule
+Tier 1 Micro-Agent LLM Weights (Qwen1.5-0.5B with 1.58-bit ternary quantization) & 1.80 GB & 11.3\% \\
+Pinned High-Frequency Agent KV-Caches (Top 50-80 AMMs and Whales) & 2.40 GB & 15.0\% \\
+Offline PPO Student Mini-Batch Training \& Optimizer States & 1.80 GB & 11.3\% \\
+\midrule
+\textbf{Total Dedicated GPU VRAM Utilization} & \textbf{6.00 GB} & \textbf{37.5\% (10.00 GB Headroom)} \\
+\bottomrule
+\end{tabularx}
+\caption{Dedicated GPU VRAM budget allocation on the NVIDIA RTX 5070 Ti (16GB total capacity) for Tier 1 teacher inference and offline PPO distillation.}
+\label{tab:vram_budget_allocation}
 \end{table}
 
 To bypass serialization bottlenecks during cross-process LOB state transfers, AMPS incorporates the Apache Arrow C Data Interface. Instead of incurring heavy JSON or Pickle serialization overhead, multi-dimensional LOB state matrices are exposed as Arrow columnar structures in shared memory (\texttt{/dev/shm}). Isolated execution processes exchange runtime state via zero-copy PyCapsule pointer transfers (\texttt{ArrowSchema} and \texttt{ArrowArray}), enabling instant data access without duplicating memory or invoking Python's Global Interpreter Lock (GIL). Furthermore, disk ingestion of raw Level-3 market ticks bypasses pandas entirely, utilizing multi-threaded Polars routines to parse streaming CSV data directly into Arrow array layouts aligned for Numba JIT execution.
@@ -95,7 +110,9 @@ This topology leverages the microarchitectural structure of the Gracemont cluste
 
 Execution boundaries are enforced at system initialization using modern cgroup v2 interfaces via sysfs:
 
-\begin{lstlisting}[language=bash, caption={System initialization script for cgroup v2 CPU core isolation.}]
+\captionof{listing}{System initialization script for cgroup v2 CPU core isolation.}
+\label{listing:cgroup_isolation}
+\begin{minted}{bash}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -110,18 +127,20 @@ mkdir -p "${CGROUP_ROOT}/amps_ecores"
 
 echo "+cpuset" | sudo tee "${CGROUP_ROOT}/cgroup.subtree_control" > /dev/null
 
-# Assign physical Raptor Cove P-Cores (Cores 0-15) to micro-agent inference
+# Assign physical Raptor Cove P-Cores (Cores 0-15)
+# to micro-agent inference
 echo "0-15" | sudo tee "${CGROUP_ROOT}/amps_pcores/cpuset.cpus" > /dev/null
 echo "0"    | sudo tee "${CGROUP_ROOT}/amps_pcores/cpuset.mems" > /dev/null
 
-# Assign physical Gracemont E-Cores (Cores 16-27) to uvloop and Numba JIT LOB
+# Assign physical Gracemont E-Cores (Cores 16-27)
+# to uvloop and Numba JIT LOB
 echo "16-27" | sudo tee "${CGROUP_ROOT}/amps_ecores/cpuset.cpus" > /dev/null
 echo "0"     | sudo tee "${CGROUP_ROOT}/amps_ecores/cpuset.mems" > /dev/null
 
 # Migrate current initialization shell and sub-processes to E-Core group
 echo $$ | sudo tee "${CGROUP_ROOT}/amps_ecores/cgroup.procs" > /dev/null
-echo "cgroup v2 isolation topology successfully configured. PID $$ pinned to E-Cores."
-\end{lstlisting}
+echo "cgroup v2 isolation topology configured. PID $$ pinned to E-Cores."
+\end{minted}
 
 \subsection{Memory Paging Optimization: 2MB Transparent HugePages (THP) Strategy}
 
@@ -161,7 +180,9 @@ The CPU relies on a hardware translation cache called the Translation Lookaside 
 
 Configuring 2 Megabyte (MB) Transparent HugePages (THP) reduces the required page table entries from 3 million down to roughly 6,000 for a 12GB memory footprint -- a 500-fold reduction. The CPU TLB can easily retain these 6,000 entries, near-completely eliminating TLB misses during agent state traversals.
 
-\begin{lstlisting}[language=bash, caption={System initialization script for dynamic 2MB Transparent HugePages.}]
+\captionof{listing}{System initialization script for dynamic 2MB Transparent HugePages.}
+\label{listing:thp_config}
+\begin{minted}{bash}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -172,11 +193,13 @@ echo advise | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/khugepaged/max_ptes_none
 
 # Expand shared memory segment maximum allocation limit (/dev/shm)
-echo 17179869184 | sudo tee /proc/sys/kernel/shmmax # 16GB max shared memory segment
-echo 4194304 | sudo tee /proc/sys/kernel/shmall     # 4 million pages
+# 16GB max shared memory segment:
+echo 17179869184 | sudo tee /proc/sys/kernel/shmmax
+# 4 million 4KB pages (16GB):
+echo 4194304 | sudo tee /proc/sys/kernel/shmall
 
 echo "THP configuration successfully initialized."
-\end{lstlisting}
+\end{minted}
 
 \section{Optimization Blueprint 1: Tiered KV-Cache VRAM Pinning Policy}
 
@@ -245,7 +268,9 @@ By profiling the swarm, the system identifies the top 50 to 80 highest-frequency
 
 The \texttt{TieredVRAMManager} governs GPU memory allocations by programmatically locking high-frequency agent KV-tensors into pinned host memory (\texttt{torch.cuda.HostRegister}) and persistent VRAM pools, while managing fallback dynamic page allocations for low-frequency agents.
 
-\begin{lstlisting}[language=python, caption={Tiered KV-Cache memory manager implementing CUDA host registration and async DMA transfers.}]
+\captionof{listing}{Tiered KV-Cache memory manager implementing CUDA host registration and async DMA transfers.}
+\label{listing:tiered_vram_manager}
+\begin{minted}{python}
 import torch
 import numpy as np
 
@@ -255,17 +280,23 @@ class TieredVRAMManager:
         self.tier1_capacity = tier1_capacity
         
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA execution environment unavailable for VRAM Pinning.")
+            raise RuntimeError("CUDA execution environment unavailable.")
         
         self.device = torch.device("cuda:0")
         
-        # 80 agents * 30MB KV-Cache allocation = ~2.4GB VRAM allocation
-        self.tier1_kv_pool = torch.zeros((self.tier1_capacity, 30 * 1024 * 1024), 
-                                         dtype=torch.int8, device=self.device)
+        # 80 agents * 30MB KV-Cache allocation = ~2.4GB VRAM
+        self.tier1_kv_pool = torch.zeros(
+            (self.tier1_capacity, 30 * 1024 * 1024), 
+            dtype=torch.int8, 
+            device=self.device
+        )
         
-        # Allocate pinned host memory pool for Tier-2 Agents (DDR5 System RAM)
-        self.tier2_host_buffer = torch.zeros((self.total_agents - self.tier1_capacity, 30 * 1024 * 1024),
-                                             dtype=torch.int8, pin_memory=True)
+        # Allocate pinned host memory pool for Tier-2 Agents (DDR5 RAM)
+        self.tier2_host_buffer = torch.zeros(
+            (self.total_agents - self.tier1_capacity, 30 * 1024 * 1024),
+            dtype=torch.int8, 
+            pin_memory=True
+        )
         
         self.agent_tier_map = np.zeros(self.total_agents, dtype=np.int32)
         self.agent_tier_map[:self.tier1_capacity] = 1 # Top 80 pinned to Tier-1
@@ -276,7 +307,7 @@ class TieredVRAMManager:
             # Tier-1 Path: Zero-latency direct VRAM pointer access (<500 ns)
             return self.tier1_kv_pool[agent_id]
         else:
-            # Tier-2 Path: Fast Asynchronous DMA Transfer from Pinned DDR5 to VRAM (~15-20 us)
+            # Tier-2 Path: Asynchronous DMA transfer from pinned DDR5 (~15-20 us)
             tier2_idx = agent_id - self.tier1_capacity
             host_tensor = self.tier2_host_buffer[tier2_idx]
             return host_tensor.to(self.device, non_blocking=True)
@@ -287,7 +318,7 @@ class TieredVRAMManager:
             return
         self.agent_tier_map[demote_agent_id] = 2
         self.agent_tier_map[promote_agent_id] = 1
-\end{lstlisting}
+\end{minted}
 
 Table \ref{tab:agent_execution_tiers} compares the operational profiles of Tier-1 and Tier-2 agents.
 
@@ -329,13 +360,18 @@ To resolve this inefficiency, AMPS implements a state input discretization pipel
 
 By applying this transformation, minor floating-point noise is filtered into discrete integer bins. Hundreds of micro-agents perceiving slightly different continuous price movements synthesize identical discrete state descriptions (e.g., \texttt{OFI\_BIN: +4}, \texttt{PRICE\_DEVIATION: -2}).
 
-\begin{lstlisting}[language=python, caption={Vectorized state metric discretization kernel compiled with Numba.}]
+\captionof{listing}{Vectorized state metric discretization kernel compiled with Numba.}
+\label{listing:discretize_market_state}
+\begin{minted}{python}
 import numpy as np
 from numba import njit
 
 @njit(fastmath=True)
-def discretize_market_state(ofi_array: np.ndarray, vwap_dev_array: np.ndarray, 
-                             num_bins: int = 10) -> np.ndarray:
+def discretize_market_state(
+    ofi_array: np.ndarray, 
+    vwap_dev_array: np.ndarray, 
+    num_bins: int = 10
+) -> np.ndarray:
     n_agents = ofi_array.shape[0]
     discrete_states = np.empty((n_agents, 2), dtype=np.int32)
     
@@ -347,7 +383,7 @@ def discretize_market_state(ofi_array: np.ndarray, vwap_dev_array: np.ndarray,
         discrete_states[i, 1] = int(round(dev_clamped))
         
     return discrete_states
-\end{lstlisting}
+\end{minted}
 
 \subsection{Singleflight Request Coalescing Engine Architecture}
 
@@ -411,20 +447,26 @@ To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Inva
 
 To enforce hardware-level write sequencing without relying on invalid Python object allocations or non-exported symbols, AMPS invokes explicit atomic memory fences via a compiled CFFI native extension (\texttt{libatomic\_fence.so}):
 
-\begin{lstlisting}[language=python, caption={Lock-free shared memory ring buffer with explicit L1 cache line padding and compiled C-standard memory fences.}]
+\captionof{listing}{Lock-free shared memory ring buffer with explicit L1 cache line padding and compiled C-standard memory fences.}
+\label{listing:lockfree_ring_buffer}
+\begin{minted}{python}
 import multiprocessing.shared_memory as shm
 import numpy as np
 from cffi import FFI
 
-# Native CFFI binding invoking GCC/LLVM __atomic_thread_fence intrinsics
+# Native CFFI binding invoking GCC/LLVM atomic intrinsics
 ffi = FFI()
 ffi.cdef("""
     void atomic_thread_fence_release(void);
     void atomic_thread_fence_acquire(void);
 """)
 # Backed by compiled native library executing inline:
-# void atomic_thread_fence_release() { __atomic_thread_fence(__ATOMIC_RELEASE); }
-# void atomic_thread_fence_acquire() { __atomic_thread_fence(__ATOMIC_ACQUIRE); }
+# void atomic_thread_fence_release() {
+#     __atomic_thread_fence(__ATOMIC_RELEASE);
+# }
+# void atomic_thread_fence_acquire() {
+#     __atomic_thread_fence(__ATOMIC_ACQUIRE);
+# }
 _fence_lib = ffi.dlopen("./libatomic_fence.so")
 
 def hardware_memory_barrier_release():
@@ -434,23 +476,36 @@ def hardware_memory_barrier_acquire():
     _fence_lib.atomic_thread_fence_acquire()
 
 class LockFreeMacroRingBuffer:
-    def __init__(self, name: str, capacity: int = 1024, slot_size: int = 256):
+    def __init__(
+        self, 
+        name: str, 
+        capacity: int = 1024, 
+        slot_size: int = 256
+    ):
         self.capacity = capacity
         self.slot_size = slot_size
         self.buffer_size = 64 + 64 + (capacity * slot_size)
         
-        self.shm = shm.SharedMemory(name=name, create=True, size=self.buffer_size)
+        self.shm = shm.SharedMemory(
+            name=name, create=True, size=self.buffer_size
+        )
         self.buf = self.shm.buf
         
-        self.head_ptr = np.ndarray((1,), dtype=np.int64, buffer=self.buf[0:8])
-        self.tail_ptr = np.ndarray((1,), dtype=np.int64, buffer=self.buf[64:72])
+        self.head_ptr = np.ndarray(
+            (1,), dtype=np.int64, buffer=self.buf[0:8]
+        )
+        self.tail_ptr = np.ndarray(
+            (1,), dtype=np.int64, buffer=self.buf[64:72]
+        )
 
     def push_narrative_vector(self, sentiment_vector: np.ndarray):
         current_head = self.head_ptr[0]
         next_head = (current_head + 1) % self.capacity
         slot_offset = 128 + (current_head * self.slot_size)
         
-        self.buf[slot_offset:slot_offset + self.slot_size] = sentiment_vector.tobytes()
+        self.buf[slot_offset:slot_offset + self.slot_size] = (
+            sentiment_vector.tobytes()
+        )
         hardware_memory_barrier_release()
         self.head_ptr[0] = next_head
 
@@ -462,11 +517,13 @@ class LockFreeMacroRingBuffer:
             return None
             
         slot_offset = 128 + (current_tail * self.slot_size)
-        data_bytes = bytes(self.buf[slot_offset:slot_offset + self.slot_size])
+        data_bytes = bytes(
+            self.buf[slot_offset:slot_offset + self.slot_size]
+        )
         hardware_memory_barrier_acquire()
         self.tail_ptr[0] = (current_tail + 1) % self.capacity
         return np.frombuffer(data_bytes, dtype=np.float32)
-\end{lstlisting}
+\end{minted}
 
 \subsection{Linear Decay Fallback \& Shock Degradation}
 
@@ -623,12 +680,17 @@ To achieve microsecond vector matching without AVX-512, AMPS utilizes the SSE4.2
 
 The Numba JIT engine compiles bit-counting functions directly into LLVM IR intrinsics (\texttt{llvm.ctpop.i64}) without heap allocations:
 
-\begin{lstlisting}[language=python, caption={Hardware-accelerated bitwise Hamming distance computation using SSE4.2 POPCNT via Numba.}]
+\captionof{listing}{Hardware-accelerated bitwise Hamming distance computation using SSE4.2 POPCNT via Numba.}
+\label{listing:hamming_sse42}
+\begin{minted}{python}
 import numpy as np
 from numba import njit
 
 @njit(fastmath=True)
-def calculate_hamming_distance_sse42(query_sig: np.ndarray, db_sig: np.ndarray) -> int:
+def calculate_hamming_distance_sse42(
+    query_sig: np.ndarray, 
+    db_sig: np.ndarray
+) -> int:
     xor_upper = query_sig[0] ^ db_sig[0]
     xor_lower = query_sig[1] ^ db_sig[1]
     
@@ -637,7 +699,7 @@ def calculate_hamming_distance_sse42(query_sig: np.ndarray, db_sig: np.ndarray) 
     dist_lower = int(xor_lower).bit_count()
     
     return dist_upper + dist_lower
-\end{lstlisting}
+\end{minted}
 
 \subsection{Threshold Window Relaxation \& Secondary FP32 Verification}
 

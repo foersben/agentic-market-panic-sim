@@ -37,7 +37,7 @@ Logging millions of high-dimensional state transitions every second would rapidl
     \item \textbf{Reward Array (\texttt{reward\_t}):} Float32 scalar tensor capturing the calibrated reward $R_t$.
     \item \textbf{Next State Array (\texttt{next\_state\_t}):} Fixed-width float32 tensor of shape $(N, 151)$ capturing $S_{t+1}$.
     \item \textbf{Action Mask Array (\texttt{mask\_t}):} Boolean bitmask vector enforcing regulatory rules (e.g., $T+1$ constraints).
-    \item \textbf{Teacher Probability Array (\texttt{teacher\_prob}):} Float32 distribution vector $P_{\text{LLM}}(a \mid S_t)$ over discrete action space $\mathcal{A}$, required to compute the KL-divergence anchor during PPO optimization.
+    \item \textbf{Teacher Probabilities (\texttt{teacher\_prob}):} Float32 distribution vector $P_{\text{LLM}}(a \mid S_t)$ over action space $\mathcal{A}$, required to compute the KL-divergence anchor during PPO optimization.
 \end{itemize}
 
 \begin{figure}[htbp]

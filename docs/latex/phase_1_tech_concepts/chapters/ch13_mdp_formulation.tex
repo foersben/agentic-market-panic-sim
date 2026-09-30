@@ -62,7 +62,7 @@ The global macroeconomic narrative shock -- synthesized by the 671B Macro Orches
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.88, transform shape,
+    scale=0.80, transform shape,
     cell/.style={draw, rectangle, minimum height=1.1cm, font=\small, align=center},
     arr/.style={->, thick, >=stealth}
 ]
@@ -130,8 +130,8 @@ Evaluates the change in aggregate portfolio wealth:
 \paragraph{Quadratic Inventory Penalty ($\gamma \cdot (\text{Inventory}_t)^2$)}
 Enforces inventory risk aversion, parameterized by $\gamma \in [10^{-4}, 10^{-2}]$. The mathematical limit behavior is characterized by:
 \begin{align}
-    \lim_{\gamma \to 0} \mathbb{E}[\text{Inventory}_t] &= \infty \quad \text{(Agent accumulates toxic inventory during panics)} \\
-    \lim_{\gamma \to \infty} \pi_{\theta}(a|s) &= \text{CANCEL} \quad \text{(Agent prematurely cancels quotes during normal spread noise)}
+    \lim_{\gamma \to 0} \mathbb{E}[\text{Inventory}_t] &= \infty \quad \text{(Accumulates toxic inventory during panics)} \\
+    \lim_{\gamma \to \infty} \pi_{\theta}(a|s) &= \text{CANCEL} \quad \text{(Cancels quotes during normal spread noise)}
 \end{align}
 
 \paragraph{KL-Divergence Teacher Anchor ($\beta \cdot D_{\text{KL}}(P_{\text{PPO}} \,||\, P_{\text{LLM}})$)}
@@ -141,8 +141,8 @@ Constrains student policy distributions ($P_{\text{PPO}}$) against live LLM teac
 \end{equation}
 The boundary behavior highlights the essential regularizing role of the teacher anchor:
 \begin{align}
-    \lim_{\beta \to 0} P_{\text{PPO}} &\to \pi_{\text{arb}} \quad \text{(Policy collapses into high-frequency statistical arbitrage)} \\
-    \lim_{\beta \to \infty} P_{\text{PPO}} &\to P_{\text{LLM}} \quad \text{(Optimization locked to slow teacher, preventing execution scaling)}
+    \lim_{\beta \to 0} P_{\text{PPO}} &\to \pi_{\text{arb}} \quad \text{(Collapses into high-frequency statistical arbitrage)} \\
+    \lim_{\beta \to \infty} P_{\text{PPO}} &\to P_{\text{LLM}} \quad \text{(Optimization locked to slow teacher)}
 \end{align}
 
 \subsection{Categorical Density Estimation \& Temperature Logit Smoothing}
@@ -176,7 +176,7 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.88, transform shape,
+    scale=0.80, transform shape,
     stage/.style={draw, rectangle, rounded corners=4pt, align=center, font=\small, inner sep=6pt, minimum height=1.6cm},
     arr/.style={->, thick, >=stealth}
 ]
@@ -214,7 +214,7 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.88, transform shape,
+    scale=0.82, transform shape,
     box/.style={draw, rectangle, rounded corners=4pt, align=center, font=\small, inner sep=6pt},
     arr/.style={->, thick, >=stealth}
 ]
