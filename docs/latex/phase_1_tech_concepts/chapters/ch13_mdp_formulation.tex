@@ -109,7 +109,7 @@ Factorizing the action tuple yields a finite categorical space of $|\mathcal{A}|
 To enforce physical and regulatory market constraints without destabilizing reinforcement learning policy updates, AMPS applies \textbf{Action Masking} directly to the student policy logits before sampling:
 \begin{enumerate}
     \item \textbf{Chinese Equity ($hkgsas$) $T+1$ Settlement Rule:} In jurisdictions enforcing $T+1$ settlement, shares purchased during the current trading session cannot be sold intraday. If $\text{Inventory}_{\text{today}} > 0$ and $\text{Inventory}_{\text{settled}} = 0$, the action $\text{action}_t = \text{SELL}$ is masked out ($M(\text{action}_t = \text{SELL}) = 0$), preventing illegal intraday round-trip scalping.
-    \item \textbf{Static Daily Board Limits (\textit{zh\={a}ngdi\`{e}t\'{i}ngb\v{a}n}):} When Limit Order Book transaction prices reach static $\pm 10\%$ daily circuit breaker limits, submitted volume for orders attempting to push prices beyond the band is clamped to zero ($V_t = 0$).
+    \item \textbf{Limit Up and Limit Down Price Bands (Single-Stock Circuit Breaker):} When Limit Order Book transaction prices reach static $\pm 10\%$ daily Limit Up or Limit Down price bands, submitted volume for orders attempting to push prices beyond the band is clamped to zero ($V_t = 0$), enforcing a Single-Stock Circuit Breaker halt on further execution beyond the regulatory price bands.
 \end{enumerate}
 
 \section{Multi-Objective PPO Reward Calibration Function ($R_t$)}
@@ -219,7 +219,7 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
     arr/.style={->, thick, >=stealth}
 ]
     \node[box, fill=blue!10] (state) {State Extraction ($S_t \in \mathbb{R}^{151}$)\\ \footnotesize L2 Depth (20) + OFI (1) + Spread (1) + Inv (1) + MRL (128)};
-    \node[box, fill=purple!10] (mask) [right=1.2cm of state] {Action Masking\\ \footnotesize $T+1$ Rules \& Board Limits};
+    \node[box, fill=purple!10] (mask) [right=1.2cm of state] {Action Masking\\ \footnotesize $T+1$ Rules \& LULD Price Bands};
     \node[box, fill=orange!10] (student) [below=1.2cm of mask] {Tier 2 Student Policy ($\pi_\theta$)\\ \footnotesize 2-Layer MLP Forward Pass (<0.2$\mu$s)};
     \node[box, fill=green!10] (reward) [below=1.2cm of state] {Multi-Objective Reward ($R_t$)\\ \footnotesize $\text{PnL} - \gamma \text{Inv}^2 - \beta D_{\text{KL}}(P_{\text{PPO}} || P_{\text{LLM}})$};
 
