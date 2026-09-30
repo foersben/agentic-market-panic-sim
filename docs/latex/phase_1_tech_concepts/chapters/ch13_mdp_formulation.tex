@@ -59,6 +59,37 @@ The global macroeconomic narrative shock -- synthesized by the 671B Macro Orches
     \dim(S_t) = 20 + 1 + 1 + 1 + 128 = 151 \implies S_t \in \mathbb{R}^{151}
 \end{equation}
 
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    cell/.style={draw, rectangle, minimum height=1.1cm, font=\small, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    % State vector blocks
+    \node[cell, fill=blue!15, minimum width=2.4cm] (depth) {LOB L1--L5 Depth\\ \footnotesize $20 \times \text{FP32}$};
+    \node[cell, fill=teal!15, minimum width=1.1cm, right=0.1cm of depth] (ofi) {OFI\\ \footnotesize 1};
+    \node[cell, fill=orange!15, minimum width=1.1cm, right=0.1cm of ofi] (spd) {Spread\\ \footnotesize 1};
+    \node[cell, fill=red!15, minimum width=1.2cm, right=0.1cm of spd] (inv) {Net Inv\\ \footnotesize 1};
+    \node[cell, fill=purple!15, minimum width=4.8cm, right=0.1cm of inv] (sirc) {SIRC Narrative Signature ($B_t$)\\ \footnotesize $128 \times \text{INT8}$ (Expanded from 16 packed bytes)};
+
+    % Braces / dimension summary
+    \draw[decorate, decoration={brace, amplitude=6pt, mirror}, thick] 
+        (depth.south west) -- (sirc.south east) 
+        node[midway, below=8pt, font=\small] {Total Input Dimensionality: $S_{i, t} \in \mathbb{R}^{151}$ (604 Bytes FP32 State / Streaming INT8 In-Register Evaluation)};
+
+    % Vector register mapping below
+    \node[draw=purple!80!black, fill=purple!5, rectangle, rounded corners=3pt, font=\scriptsize, align=center, below=1.4cm of sirc] (ymm_map) {
+        \textbf{AVX2 Vector Register Mapping:}\\
+        4 YMM Registers (\texttt{YMM0} -- \texttt{YMM3}) hold 128 INT8 SIRC values ($4 \times 32\text{ bytes} = 128\text{ bytes}$).\\
+        Leaves 12 YMM Registers (\texttt{YMM4} -- \texttt{YMM15}) free for weights, VNNI accumulators, and biases.
+    };
+    \draw[arr, dashed, purple!80!black] (sirc.south) -- (ymm_map.north);
+\end{tikzpicture}
+\caption{Segmented layout of the 151-dimensional state vector $S_{i, t} \in \mathbb{R}^{151}$ and its zero-copy AVX2 register packing on Intel Gracemont cores.}
+\label{fig:state_vector_layout}
+\end{figure}
+
 \section{Action Space ($A_t$) and Microstructural Action Masking}
 
 The student policy output maps to a discrete action tuple:
@@ -66,10 +97,12 @@ The student policy output maps to a discrete action tuple:
     A_t = (\text{action}_t, \, \Delta P_t, \, V_t)
 \end{equation}
 \begin{itemize}
-    \item $\text{action}_t \in \{0, 1, 2\} \implies \{\text{BUY}, \, \text{SELL}, \, \text{HOLD/CANCEL}\}$.
-    \item $\Delta P_t \in \mathbb{Z}$: Discrete price offset in ticks relative to the Best Bid or Best Ask.
-    \item $V_t \in \mathbb{Z}^+$: Submitted order volume based on balance sheet allocation.
+    \item $\text{action}_t \in \{0, 1, 2, 3\} \implies \{\text{BUY}, \, \text{SELL}, \, \text{HOLD}, \, \text{CANCEL}\}$.
+    \item $\Delta P_t \in \{-10, \dots, +10\}$: Discrete price offset across 21 tick bins relative to Best Bid or Best Ask.
+    \item $V_t \in \{1, 2, \dots, 10\}$: Discrete order volume tier based on balance sheet allocation.
 \end{itemize}
+
+Factorizing the action tuple yields a finite categorical space of $|\mathcal{A}| = 4 \times 21 \times 10 = 840$ discrete actions, enabling high-speed categorical density evaluation.
 
 \subsection{Microstructural Action Masking \& Regulatory Invariants}
 
@@ -112,6 +145,72 @@ The boundary behavior highlights the essential regularizing role of the teacher 
     \lim_{\beta \to \infty} P_{\text{PPO}} &\to P_{\text{LLM}} \quad \text{(Optimization locked to slow teacher, preventing execution scaling)}
 \end{align}
 
+\subsection{Categorical Density Estimation \& Temperature Logit Smoothing}
+
+A critical mathematical challenge in evaluating $D_{\text{KL}}(P_{\text{PPO}} \,||\, P_{\text{LLM}})$ stems from the fact that generative LLMs output discrete point decisions $a_{\text{LLM}} = (\text{action}_{\text{LLM}}, \Delta P_{\text{LLM}}, V_{\text{LLM}})$ rather than dense probability distributions over the entire discrete action space $\mathcal{A}$. If unchosen actions are assigned zero probability ($P_{\text{LLM}}(a | S_t) = 0$), the ratio $P_{\text{PPO}} / P_{\text{LLM}}$ encounters division by zero, causing logarithmic singularities ($\ln(P_{\text{PPO}} / 0) \to \infty$) and destabilizing PPO gradient updates.
+
+To construct a mathematically rigorous, strictly positive teacher probability density $P_{\text{LLM}}(a | S_t) > 0$, AMPS applies \textbf{Gaussian-Laplace Kernel Density Estimation (KDE)} with calibrated temperature logit smoothing:
+
+\begin{equation}
+    P_{\text{LLM}}(a \mid S_t) = \frac{\exp\left( - \frac{\|a - a_{\text{LLM}}\|_W^2}{2\tau_{\text{KDE}}^2} \right)}{\sum_{a' \in \mathcal{A}} \exp\left( - \frac{\|a' - a_{\text{LLM}}\|_W^2}{2\tau_{\text{KDE}}^2} \right)}
+\end{equation}
+
+where $W = \text{diag}(w_{\text{action}}, w_{\Delta P}, w_V)$ is a diagonal metric tensor penalizing distance in action space, and $\tau_{\text{KDE}} \in [0.15, 0.50]$ is the smoothing kernel temperature. This smoothing ensures full categorical support ($P_{\text{LLM}}(a | S_t) > 0, \, \forall a \in \mathcal{A}$), generating continuous, well-conditioned KL divergence gradient signals during offline policy distillation.
+
+\subsection{Scale Distributional Shift \& Multi-Stage Scaling Curriculum}
+
+In market microstructure, execution slippage, queue depletion, and toxic flow feedback scale non-linearly with total market participant volume. An aggressive liquidation volume that is easily absorbed in a 400-agent workstation sandbox can trigger immediate liquidity voiding when executed amidst 1,000,000 active participants. Training student policies strictly on 400-agent trajectories risks severe out-of-distribution (OOD) state extrapolation errors upon production deployment.
+
+To bridge this environment distribution shift, AMPS implements a \textbf{Multi-Stage Iterative Scaling Curriculum}:
+
+\begin{enumerate}
+    \item \textbf{Stage 1 (Trajectory Harvesting at 400 Scale):} Tier 1 generative agents execute across multi-patch scenarios, harvesting base state-action-reward trajectories.
+    \item \textbf{Stage 2 (Bridge Fine-Tuning at 10,000 Scale):} Student policies undergo Offline-to-Online PPO fine-tuning using Conservative Q-Learning (CQL) objectives at an intermediate scale of 10,000 agents, incorporating a non-linear square-root market impact penalty law into the reward:
+    \begin{equation}
+        \Delta P_{\text{impact}, t} = \gamma_{\text{impact}} \cdot \text{Sign}(V_t) \cdot \sqrt{\frac{V_t}{\text{Depth}_t^{(L1..L5)}}}
+    \end{equation}
+    This penalty anchors policy gradients against unrealistic liquidity assumptions.
+    \item \textbf{Stage 3 (Production Deployment at 1,000,000 Scale):} Calibrated archetype weights are frozen, quantized to INT8, and deployed to host Gracemont E-cores with asynchronous Poisson execution queues.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    stage/.style={draw, rectangle, rounded corners=4pt, align=center, font=\small, inner sep=6pt, minimum height=1.6cm},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[stage, fill=blue!10, draw=blue!80!black] (s1) {
+        \textbf{Stage 1: Offline Harvesting}\\
+        \footnotesize \textbf{400 Agents (Tier 1 Teacher)}\\
+        \scriptsize Raptor Cove P-Cores + SIRC\\
+        \scriptsize Rich narrative reasoning\\
+        \scriptsize Zarr NVMe trajectory stream
+    };
+
+    \node[stage, fill=orange!10, draw=orange!80!black] (s2) [right=0.8cm of s1] {
+        \textbf{Stage 2: Bridge Fine-Tuning}\\
+        \footnotesize \textbf{10,000 Agents (CQL / PPO)}\\
+        \scriptsize RTX 5070 Ti (<2GB VRAM)\\
+        \scriptsize Square-root impact penalty: $\Delta P_{\text{impact}}$\\
+        \scriptsize Eliminates OOD extrapolation errors
+    };
+
+    \node[stage, fill=green!10, draw=green!80!black] (s3) [right=0.8cm of s2] {
+        \textbf{Stage 3: Production Swarm}\\
+        \footnotesize \textbf{1,000,000 Agents (Tier 2)}\\
+        \scriptsize 12 Gracemont E-Cores (INT8 VNNI)\\
+        \scriptsize Asynchronous Poisson queues\\
+        \scriptsize Zero L3 thrashing (<0.2$\mu$s/pass)
+    };
+
+    \draw[arr] (s1) -- node[above, font=\scriptsize] {Trajectories} (s2);
+    \draw[arr] (s2) -- node[above, font=\scriptsize] {Quantize (INT8)} (s3);
+\end{tikzpicture}
+\caption{Multi-Stage Iterative Scaling Curriculum ($400 \to 10\text{k} \to 1\text{M}$ agents). The three-stage pipeline bridges the microstructural distribution shift between small-scale teacher harvesting and million-agent production execution.}
+\label{fig:scaling_curriculum}
+\end{figure}
+
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
@@ -133,4 +232,4 @@ The boundary behavior highlights the essential regularizing role of the teacher 
 \label{fig:mdp_formulation_step}
 \end{figure}
 
-This mathematical MDP structure provides the formal interface for harvesting multi-patch scenario trajectories.
+This mathematical MDP structure provides the formal interface for harvesting multi-patch scenario trajectories and executing offline policy distillation.

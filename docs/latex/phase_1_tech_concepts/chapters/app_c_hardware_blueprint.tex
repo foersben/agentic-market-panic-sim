@@ -43,7 +43,7 @@ To bypass serialization bottlenecks during cross-process LOB state transfers, AM
 
 \subsection{P/E-Core NUMA Pinning \& Thread Isolation Topology}
 
-The default Linux Completely Fair Scheduler (CFS) is designed to optimize general-purpose multitasking by dynamically rebalancing software threads across all available CPU cores. In a heterogeneous microarchitecture such as the Intel Core i7-14700K--which integrates high-throughput Raptor Cove Performance Cores (P-Cores) with dense Gracemont Efficiency Cores (E-Cores)--dynamic thread migration introduces severe execution hazards. When the Linux CFS migrates a high-frequency financial matching loop from a P-Core to an E-Core, or vice versa, the execution context and local L2 cache lines are invalidated. This migration latency causes unpredictable execution spikes that destroy the microsecond-level determinism required by the LOB engine.
+The default Linux Completely Fair Scheduler (CFS) is designed to optimize general-purpose multitasking by dynamically rebalancing software threads across all available CPU cores. In a heterogeneous microarchitecture such as the Intel Core i7-14700K -- which integrates high-throughput Raptor Cove Performance Cores (P-Cores) with dense Gracemont Efficiency Cores (E-Cores) -- dynamic thread migration introduces severe execution hazards. When the Linux CFS migrates a high-frequency financial matching loop from a P-Core to an E-Core, or vice versa, the execution context and local L2 cache lines are invalidated. This migration latency causes unpredictable execution spikes that destroy the microsecond-level determinism required by the LOB engine.
 
 \begin{figure}[htbp]
 \centering
@@ -157,9 +157,9 @@ When 400 micro-agents continuously evaluate financial state matrices across $\si
 \label{fig:thp_comparison}
 \end{figure}
 
-The CPU relies on a hardware translation cache called the Translation Lookaside Buffer (TLB) to convert virtual addresses used by software into physical RAM locations. Because the i7-14700K TLB hardware cache can only store a few thousand entries, traversing 3 million 4KB page entries causes incessant TLB misses. The kernel is forced to continually pause execution to look up unmapped memory addresses from main system RAM--a process known as a page table walk. In micro-agent swarm processing, this aggregate TLB penalty degrades vector computation speed by upwards of 30\%.
+The CPU relies on a hardware translation cache called the Translation Lookaside Buffer (TLB) to convert virtual addresses used by software into physical RAM locations. Because the i7-14700K TLB hardware cache can only store a few thousand entries, traversing 3 million 4KB page entries causes incessant TLB misses. The kernel is forced to continually pause execution to look up unmapped memory addresses from main system RAM -- a process known as a page table walk. In micro-agent swarm processing, this aggregate TLB penalty degrades vector computation speed by upwards of 30\%.
 
-Configuring 2 Megabyte (MB) Transparent HugePages (THP) reduces the required page table entries from 3 million down to roughly 6,000 for a 12GB memory footprint--a 500-fold reduction. The CPU TLB can easily retain these 6,000 entries, near-completely eliminating TLB misses during agent state traversals.
+Configuring 2 Megabyte (MB) Transparent HugePages (THP) reduces the required page table entries from 3 million down to roughly 6,000 for a 12GB memory footprint -- a 500-fold reduction. The CPU TLB can easily retain these 6,000 entries, near-completely eliminating TLB misses during agent state traversals.
 
 \begin{lstlisting}[language=bash, caption={System initialization script for dynamic 2MB Transparent HugePages.}]
 #!/usr/bin/env bash
@@ -237,9 +237,9 @@ If key-value (KV) inference caches for all 400 agents are continuously swapped b
 \label{fig:tiered_vram}
 \end{figure}
 
-The micro-agents utilize ultra-lightweight language model architectures (such as Qwen1.5-0.5B parameters). By applying 1.58-bit ternary weight quantization--where weights are constrained strictly to discrete values of $\{-1, 0, 1\}$--the parameter memory footprint of each agent is reduced to roughly 200MB--300MB. The KV-cache for an active agent context window requires under 25MB--35MB.
+The micro-agents utilize ultra-lightweight language model architectures (such as Qwen1.5-0.5B parameters). By applying 1.58-bit ternary weight quantization -- where weights are constrained strictly to discrete values of $\{-1, 0, 1\}$ -- the parameter memory footprint of each agent is reduced to roughly 200MB to 300MB. The KV-cache for an active agent context window requires under 25MB to 35MB.
 
-By profiling the swarm, the system identifies the top 50 to 80 highest-frequency agents (liquidity providers and institutional whales). Pinning these 50--80 critical agents directly into the GPU's $\sim$10GB idle VRAM budget consumes only $\sim$1.8GB to $\sim$2.5GB of VRAM for parameters and KV-caches combined. The remaining $\sim$320 to 350 low-frequency retail agents have their dormant states offloaded to host DDR5 RAM via memory-mapped (\texttt{mmap}) files, and are dynamically loaded to VRAM only when actively executing a trade. Pinning high-frequency liquidity providers directly in GPU hardware memory eliminates over 80\% of PCIe bus transfers during standard simulation ticks.
+By profiling the swarm, the system identifies the top 50 to 80 highest-frequency agents (liquidity providers and institutional whales). Pinning these 50-80 critical agents directly into the GPU's $\sim$10GB idle VRAM budget consumes only $\sim$1.8GB to $\sim$2.5GB of VRAM for parameters and KV-caches combined. The remaining $\sim$320 to 350 low-frequency retail agents have their dormant states offloaded to host DDR5 RAM via memory-mapped (\texttt{mmap}) files, and are dynamically loaded to VRAM only when actively executing a trade. Pinning high-frequency liquidity providers directly in GPU hardware memory eliminates over 80\% of PCIe bus transfers during standard simulation ticks.
 
 \subsection{Implementation Architecture: \texttt{TieredVRAMManager}}
 
@@ -409,26 +409,29 @@ To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Inva
     \item \textbf{Data Slots Array:} Byte offset 128 onwards.
 \end{itemize}
 
-To enforce hardware-level write sequencing without relying on invalid Python object allocations, AMPS invokes C-standard memory fences (\texttt{atomic\_thread\_fence}) via ctypes:
+To enforce hardware-level write sequencing without relying on invalid Python object allocations or non-exported symbols, AMPS invokes explicit atomic memory fences via a compiled CFFI native extension (\texttt{libatomic\_fence.so}):
 
-\begin{lstlisting}[language=python, caption={Lock-free shared memory ring buffer with explicit L1 cache line padding and C-standard memory fences.}]
-import ctypes
+\begin{lstlisting}[language=python, caption={Lock-free shared memory ring buffer with explicit L1 cache line padding and compiled C-standard memory fences.}]
 import multiprocessing.shared_memory as shm
 import numpy as np
+from cffi import FFI
 
-_libc = ctypes.CDLL(None)
+# Native CFFI binding invoking GCC/LLVM __atomic_thread_fence intrinsics
+ffi = FFI()
+ffi.cdef("""
+    void atomic_thread_fence_release(void);
+    void atomic_thread_fence_acquire(void);
+""")
+# Backed by compiled native library executing inline:
+# void atomic_thread_fence_release() { __atomic_thread_fence(__ATOMIC_RELEASE); }
+# void atomic_thread_fence_acquire() { __atomic_thread_fence(__ATOMIC_ACQUIRE); }
+_fence_lib = ffi.dlopen("./libatomic_fence.so")
 
 def hardware_memory_barrier_release():
-    try:
-        _libc.__atomic_thread_fence(3) # __ATOMIC_RELEASE
-    except AttributeError:
-        pass
+    _fence_lib.atomic_thread_fence_release()
 
 def hardware_memory_barrier_acquire():
-    try:
-        _libc.__atomic_thread_fence(2) # __ATOMIC_ACQUIRE
-    except AttributeError:
-        pass
+    _fence_lib.atomic_thread_fence_acquire()
 
 class LockFreeMacroRingBuffer:
     def __init__(self, name: str, capacity: int = 1024, slot_size: int = 256):
@@ -721,7 +724,7 @@ GPU Compute Overhead & 100\% Active Load & $\sim$20\% Fallback Load & $<$ 5\% Fa
 
 To maintain hardware performance guarantees and prevent code regressions, the AMPS repository enforces automated testing gates within its Continuous Integration (CI/CD) pipeline.
 
-The verification engine enforces Table-to-Trace Parity using \texttt{pytest}. Markdown Data-Flow Matrices--which document theoretical market state transitions and expected parameter bounds--are parsed by automated scripts. Tests execute the Numba engine in isolation against deterministic mock event streams, bypassing the stochastic LLM generative swarm to ensure predictable build outcomes. The resulting execution traces are validated point-by-point against the values defined in the Data-Flow Matrices.
+The verification engine enforces Table-to-Trace Parity using \texttt{pytest}. Markdown Data-Flow Matrices -- which document theoretical market state transitions and expected parameter bounds -- are parsed by automated scripts. Tests execute the Numba engine in isolation against deterministic mock event streams, bypassing the stochastic LLM generative swarm to ensure predictable build outcomes. The resulting execution traces are validated point-by-point against the values defined in the Data-Flow Matrices.
 
 To guarantee state persistence and deterministic replay, the Numba matching engine employs a Double Buffering paradigm (Read Layer vs. Write Layer) at every tick. All state transitions are compiled into immutable, contiguous NumPy arrays in the Write Layer and swapped to the Read Layer at tick completion. These arrays are streamed directly to Zarr chunked telemetry files. During post-crash analysis or replay debugging, the visualization front-end loads historical Zarr chunks directly, completely bypassing LLM inference and the Numba engine.
 
@@ -776,7 +779,7 @@ Simultaneously, an automated Abstract Syntax Tree (AST) parser engine (invoked v
 
 \subsection{Consolidated Hardware Optimization Matrix}
 
-The software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon from a 400-agent teacher generator to a 1,000,000-agent distilled production swarm. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2$ $\mu$s (mean $3.8$ $\mu$s), Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash), and a student policy forward pass latency of $\tau_{\text{execution}} \le 0.2\,\mu\text{s}$ ($<200$ ns). Table \ref{tab:hardware_optimization_matrix} summarizes the consolidated architectural blueprints.
+The software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon from a 400-agent teacher generator to a 1,000,000-agent distilled production swarm. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2\,\mu$s (mean $3.8\,\mu$s) strictly for Tier 1 teacher semantic search on Raptor Cove P-cores, Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash), and a student policy forward pass latency of $\tau_{\text{execution}} \le 0.2\,\mu\text{s}$ ($<200$ ns) strictly for Tier 2 batched student passes on Gracemont E-cores. Table \ref{tab:hardware_optimization_matrix} summarizes the consolidated architectural blueprints.
 
 \begin{table}[htbp]
 \centering

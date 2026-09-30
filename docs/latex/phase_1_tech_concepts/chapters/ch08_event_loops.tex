@@ -16,7 +16,7 @@ To resolve this, AMPS abandons OS-level multithreading entirely in favor of \tex
 
 While the default Python \texttt{asyncio} event loop is a massive improvement over multithreading, it is written in pure Python and remains relatively slow. AMPS replaces the default loop with \textbf{\texttt{uvloop}} \cite{selivanov2016uvloop}.
 
-\texttt{uvloop} is a Cython wrapper around \texttt{libuv} (the ultra-fast C library that powers Node.js). Under the hood, \texttt{uvloop} hooks directly into the operating system's lowest-level I/O notification facilities--specifically the \texttt{epoll} system call on Linux. This paradigm shift allows the single Python thread to monitor thousands of agent states simultaneously in the C-kernel with practically zero polling overhead.
+\texttt{uvloop} is a Cython wrapper around \texttt{libuv} (the ultra-fast C library that powers Node.js). Under the hood, \texttt{uvloop} hooks directly into the operating system's lowest-level I/O notification facilities -- specifically the \texttt{epoll} system call on Linux. This paradigm shift allows the single Python thread to monitor thousands of agent states simultaneously in the C-kernel with practically zero polling overhead.
 
 \section{Thundering Herd Mitigation (Singleflight Coalescing)}
 
@@ -54,11 +54,62 @@ Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16G
 \label{fig:singleflight_detail}
 \end{figure}
 
-Mechanistically, Singleflight operates as follows within the \texttt{asyncio} loop:
+\section{Two-Phase Inference Pipeline: Resolving Agent State Heterogeneity}
+
+A fundamental architectural pitfall in applying request coalescing to multi-agent simulations is \textbf{State Heterogeneity}. Micro-agents do not possess identical cognitive states: they maintain distinct psychological risk tolerances (Risk-Averse, Contrarian, Momentum), individualized cash and inventory balances ($\text{Inventory}_{i, t}$), and staggered execution arrival timestamps ($\Delta t_i \in [0.5\text{s}, 3.0\text{s}]$). If Singleflight attempted to hash the full agent decision prompt, every agent would produce a unique hash key, completely defeating request deduplication and unleashing a catastrophic GPU cache stampede.
+
+To preserve the benefits of Singleflight while supporting full behavioral heterogeneity, AMPS strictly partitions the inference pipeline into two distinct phases:
+
 \begin{enumerate}
-    \item \textbf{First Caller:} Agent 1 attempts to run inference based on the market shock. It acquires a non-blocking mutex lock, sees no active execution for this prompt, and creates a new \texttt{asyncio.Future} (a Promise). It registers this Promise in a global dictionary and yields control to wait for the GPU.
-    \item \textbf{Duplicate Callers:} Microseconds later, Agents 2 through 400 wake up and acquire the mutex. They detect the existing Promise in the dictionary, increment a duplicates counter, and instantly yield their execution context back to \texttt{uvloop}.
-    \item \textbf{Result Sharing:} When the GPU finishes processing Agent 1's prompt, Agent 1 resolves the Promise. This acts as a broadcast signal that instantly wakes the 399 sleeping agents in $O(1)$ time and hands them the zero-copy result. 
+    \item \textbf{Phase 1: Coalesced Macro News Parsing (Global Singleflight Pass):}
+    When the 671B Macro Orchestrator broadcasts an unstructured regulatory filing or macroeconomic shock, all 400 micro-agents require an objective semantic understanding of the event. Rather than each agent independently querying the LLM to parse the headline, the first agent to process the shock acquires the Singleflight mutex. 
+    
+    The prompt consists strictly of the raw news text and objective market metrics (Order Flow Imbalance and market-wide volatility). The GPU executes a single forward pass, extracting an abstract, normalized 128-dimensional macroeconomic shock vector ($B_t \in \mathbb{R}^{128}$). When this single execution resolves, all waiting agent promises wake in $O(1)$ time, receiving the shared, zero-copy parsed shock vector.
+    
+    \item \textbf{Phase 2: Private Agent Policy Evaluation (Heterogeneous Vectorized Head):}
+    Equipped with the shared 128D narrative shock vector $B_t$, each agent transitions to its private decision head. The agent concatenates $B_t$ with its private state variables -- local bid/ask queue position, net inventory holdings ($\text{Inventory}_{i, t}$), and psychological loss aversion thresholds -- into the 151-dimensional state vector $S_{i, t} \in \mathbb{R}^{151}$. 
+    
+    Because this stage evaluates lightweight 2-layer MLPs or quantized rules rather than dense autoregressive token generation, private evaluations execute concurrently across host CPU Gracemont E-cores without touching the GPU.
 \end{enumerate}
 
-This mechanism completely flattens CPU and GPU utilization during massive volatility spikes, preventing the simulation from crashing exactly when the panic dynamics are most critical.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    box/.style={draw, rectangle, rounded corners=3pt, align=center, font=\small, inner sep=5pt},
+    phase1/.style={draw=blue!80!black, fill=blue!8, rectangle, rounded corners=4pt},
+    phase2/.style={draw=green!70!black, fill=green!8, rectangle, rounded corners=4pt},
+    arr/.style={->, thick, >=stealth}
+]
+    % Phase 1: Coalesced Macro News Parsing
+    \node[box, fill=red!10, draw=red!70!black] (news) {Macroeconomic Shock\\ \footnotesize (SEC 8-K / Breaking Headline)};
+    \node[box, fill=purple!15, draw=purple!80!black] (singleflight) [right=1.2cm of news] {Singleflight Mutex\\ \footnotesize 1st Caller Locks};
+    \node[box, fill=orange!15, draw=orange!80!black] (gpu) [right=1.2cm of singleflight] {RTX 5070 Ti (vLLM)\\ \footnotesize 1x Macro Forward Pass};
+    \node[box, fill=blue!15, draw=blue!80!black] (vector) [right=1.2cm of gpu] {128D Shock Vector\\ \footnotesize $B_t \in \mathbb{R}^{128}$ (Shared)};
+
+    \draw[arr] (news) -- (singleflight);
+    \draw[arr] (singleflight) -- node[above, font=\scriptsize] {1 Query} (gpu);
+    \draw[arr] (gpu) -- node[above, font=\scriptsize] {Extract} (vector);
+
+    % Phase 2: Private Agent Evaluation
+    \node[box, fill=teal!10, draw=teal!70!black] (p_state) [below=1.6cm of singleflight] {Private Agent States\\ \footnotesize $\text{Inventory}_{i,t}$, Risk Limits, Queue};
+    \node[box, fill=green!15, draw=green!80!black] (concat) [below=1.6cm of gpu] {Vector Assembly\\ \footnotesize $S_{i,t} = [L_t, \text{OFI}_t, S_t, \text{Inv}_{i,t}, B_t] \in \mathbb{R}^{151}$};
+    \node[box, fill=yellow!20, draw=yellow!80!black] (ecores) [below=1.6cm of vector] {12 Gracemont E-Cores\\ \footnotesize INT8 VNNI Policy Passes};
+    \node[box, fill=red!15, draw=red!80!black] (orders) [right=1.0cm of ecores] {Heterogeneous\\LOB Orders};
+
+    \draw[arr, dashed, blue!80!black] (vector.south) -- ++(0,-0.6) -| (concat.north);
+    \draw[arr] (p_state) -- (concat);
+    \draw[arr] (concat) -- node[above, font=\scriptsize] {AVX2} (ecores);
+    \draw[arr] (ecores) -- (orders);
+
+    % Background groupings
+    \begin{scope}[on background layer]
+        \node[phase1, fit=(news)(singleflight)(gpu)(vector), label=above:{\textbf{\footnotesize Phase 1: Coalesced Macro News Parsing (Global GPU Pass)}}] {};
+        \node[phase2, fit=(p_state)(concat)(ecores)(orders), label=below:{\textbf{\footnotesize Phase 2: Heterogeneous Private Agent Policy Evaluation (Concurrent CPU Passes)}}] {};
+    \end{scope}
+\end{tikzpicture}
+\caption{Two-Phase Singleflight Architecture. Phase 1 coalesces macro shock comprehension into a single GPU forward pass, broadcasting an abstract 128D narrative vector $B_t$. Phase 2 evaluates heterogeneous agent actions concurrently across CPU Gracemont E-cores without touching GPU VRAM.}
+\label{fig:two_phase_singleflight}
+\end{figure}
+
+This two-phase architecture eliminates over 95\% of redundant GPU token generation while fully preserving heterogeneous, individualized bounded rationality across the entire agent swarm.
