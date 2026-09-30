@@ -43,30 +43,44 @@ Logging millions of high-dimensional state transitions every second would rapidl
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.88, transform shape,
-    patch/.style={draw, rectangle, rounded corners=4pt, fill=blue!10, minimum width=2.6cm, minimum height=1.0cm, align=center, font=\scriptsize\bfseries},
-    shm/.style={draw, cylinder, shape border rotate=90, aspect=0.2, fill=yellow!20, minimum width=11.5cm, minimum height=1.2cm, align=center, font=\small\bfseries},
-    ppo/.style={draw, rectangle, rounded corners=4pt, fill=orange!20, minimum width=5.4cm, minimum height=1.2cm, align=center, font=\small\bfseries},
-    zarr/.style={draw, rectangle, rounded corners=4pt, fill=green!20, minimum width=5.4cm, minimum height=1.2cm, align=center, font=\small\bfseries},
-    arr/.style={->, thick, >=stealth}
+    scale=0.84, transform shape,
+    patch/.style={draw=blue!75!black, rectangle, rounded corners=4pt, fill=blue!10, minimum width=2.65cm, minimum height=1.1cm, align=center, font=\scriptsize\bfseries},
+    shm/.style={draw=orange!80!black, rectangle, rounded corners=5pt, fill=yellow!15, minimum width=12.2cm, minimum height=1.25cm, align=center, font=\small, line width=0.9pt},
+    store/.style={draw=green!70!black, rectangle, rounded corners=4pt, fill=green!15, minimum width=5.7cm, minimum height=1.25cm, align=center, font=\small},
+    ppo/.style={draw=purple!70!black, rectangle, rounded corners=4pt, fill=purple!12, minimum width=5.7cm, minimum height=1.25cm, align=center, font=\small},
+    arr/.style={-{Stealth[scale=0.95]}, thick, draw=black!75}
 ]
-    \node[patch] (p1) at (0, 3.2) {Lehman Shock\\($\mu \to 1$)};
-    \node[patch] (p2) at (3.2, 3.2) {Short Squeeze\\(LULD Testing)};
-    \node[patch] (p3) at (6.4, 3.2) {Fat-Finger\\(V-Dislocation)};
-    \node[patch] (p4) at (9.6, 3.2) {Chinese Equity\\($T+1$ Masking)};
+    % Row 1: 4 Scenario Patches
+    \node[patch] (p1) at (0.3, 3.2) {Lehman Shock\\($\mu \to 1$)};
+    \node[patch] (p2) at (3.3, 3.2) {Short Squeeze\\(LULD Testing)};
+    \node[patch] (p3) at (6.3, 3.2) {Fat-Finger\\(V-Dislocation)};
+    \node[patch] (p4) at (9.3, 3.2) {Chinese Equity\\($T+1$ Masking)};
 
-    \node[shm] (bus) at (4.8, 1.4) {POSIX \texttt{/dev/shm} Apache Arrow Record Batches (Lock-Free Ring)};
+    % Row 2: POSIX Shared Memory Ring Buffer
+    \node[shm] (bus) at (4.8, 1.2) {
+        \textbf{POSIX Shared Memory Ring Buffer (\texttt{/dev/shm})}\\[2pt]
+        \footnotesize Zero-Copy Streaming $\cdot$ Apache Arrow C Data Interface Record Batches
+    };
 
-    \node[zarr] (disk) at (1.8, -0.6) {Disk-Backed Zarr Store\\ \footnotesize (Chunked Telemetry Archives)};
-    \node[ppo] (train) at (7.8, -0.6) {Offline PPO Training Engine\\ \footnotesize (Multi-Objective Reward Calibration)};
+    % Row 3: Dual Consumers (Disk Store & Training Engine)
+    \node[store] (disk) at (1.8, -0.9) {
+        \textbf{Disk-Backed Zarr Store}\\[2pt]
+        \scriptsize Chunked Telemetry $\cdot$ Blosc LZ4
+    };
+    \node[ppo] (train) at (7.8, -0.9) {
+        \textbf{Offline PPO Training Engine}\\[2pt]
+        \scriptsize Multi-Objective Reward Calibration $\cdot$ GPU Streaming
+    };
 
-    \draw[arr] (p1) -- (p1 |- bus.north);
-    \draw[arr] (p2) -- (p2 |- bus.north);
-    \draw[arr] (p3) -- (p3 |- bus.north);
-    \draw[arr] (p4) -- (p4 |- bus.north);
+    % Arrows from Patches to SHM Bus
+    \draw[arr] (p1.south) -- (p1.south |- bus.north);
+    \draw[arr] (p2.south) -- (p2.south |- bus.north);
+    \draw[arr] (p3.south) -- (p3.south |- bus.north);
+    \draw[arr] (p4.south) -- (p4.south |- bus.north);
 
-    \draw[arr] (bus.south -| disk.north) -- (disk.north);
-    \draw[arr] (bus.south -| train.north) -- (train.north);
+    % Arrows from SHM Bus to Consumers
+    \draw[arr] (bus.south -| disk.north) -- node[right, font=\tiny\bfseries] {Persist} (disk.north);
+    \draw[arr] (bus.south -| train.north) -- node[right, font=\tiny\bfseries] {Stream} (train.north);
 \end{tikzpicture}
 \caption{The Multi-Patch Trajectory Harvesting Pipeline. Four scenario patches execute in parallel, streaming zero-copy Arrow batches through POSIX shared memory into Zarr storage and the offline PPO training loop.}
 \label{fig:multi_patch_harvesting_pipeline}

@@ -67,7 +67,7 @@ The global macroeconomic narrative shock -- synthesized by the 671B Macro Orches
     arr/.style={->, thick, >=stealth}
 ]
     % State vector blocks
-    \node[cell, fill=blue!15, minimum width=2.4cm] (depth) {LOB L1--L5 Depth\\ \footnotesize $20 \times \text{FP32}$};
+    \node[cell, fill=blue!15, minimum width=2.4cm] (depth) {LOB L1-L5 Depth\\ \footnotesize $20 \times \text{FP32}$};
     \node[cell, fill=teal!15, minimum width=1.1cm, right=0.1cm of depth] (ofi) {OFI\\ \footnotesize 1};
     \node[cell, fill=orange!15, minimum width=1.1cm, right=0.1cm of ofi] (spd) {Spread\\ \footnotesize 1};
     \node[cell, fill=red!15, minimum width=1.2cm, right=0.1cm of spd] (inv) {Net Inv\\ \footnotesize 1};
@@ -176,7 +176,7 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    scale=0.80, transform shape,
+    scale=0.74, transform shape,
     stage/.style={draw, rectangle, rounded corners=4pt, align=center, font=\small, inner sep=6pt, minimum height=1.6cm},
     arr/.style={->, thick, >=stealth}
 ]
@@ -188,7 +188,7 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
         \scriptsize Zarr NVMe trajectory stream
     };
 
-    \node[stage, fill=orange!10, draw=orange!80!black] (s2) [right=0.8cm of s1] {
+    \node[stage, fill=orange!10, draw=orange!80!black] (s2) [right=1.3cm of s1] {
         \textbf{Stage 2: Bridge Fine-Tuning}\\
         \footnotesize \textbf{10,000 Agents (CQL / PPO)}\\
         \scriptsize RTX 5070 Ti (<2GB VRAM)\\
@@ -196,7 +196,7 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
         \scriptsize Eliminates OOD extrapolation errors
     };
 
-    \node[stage, fill=green!10, draw=green!80!black] (s3) [right=0.8cm of s2] {
+    \node[stage, fill=green!10, draw=green!80!black] (s3) [right=1.3cm of s2] {
         \textbf{Stage 3: Production Swarm}\\
         \footnotesize \textbf{1,000,000 Agents (Tier 2)}\\
         \scriptsize 12 Gracemont E-Cores (INT8 VNNI)\\
@@ -204,8 +204,8 @@ To bridge this environment distribution shift, AMPS implements a \textbf{Multi-S
         \scriptsize Zero L3 thrashing (<0.2$\mu$s/pass)
     };
 
-    \draw[arr] (s1) -- node[above, font=\scriptsize] {Trajectories} (s2);
-    \draw[arr] (s2) -- node[above, font=\scriptsize] {Quantize (INT8)} (s3);
+    \draw[arr] (s1) -- node[above=2pt, font=\tiny\bfseries, align=center] {Offline\\Trajectories} (s2);
+    \draw[arr] (s2) -- node[above=2pt, font=\tiny\bfseries, align=center] {Quantize\\(INT8)} (s3);
 \end{tikzpicture}
 \caption{Multi-Stage Iterative Scaling Curriculum ($400 \to 10\text{k} \to 1\text{M}$ agents). The three-stage pipeline bridges the microstructural distribution shift between small-scale teacher harvesting and million-agent production execution.}
 \label{fig:scaling_curriculum}
