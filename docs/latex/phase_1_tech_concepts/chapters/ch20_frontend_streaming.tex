@@ -1,0 +1,81 @@
+\chapter{Front-End UI Architecture \& Zero-Latency WebSocket Streaming}
+\label{ch:frontend_streaming}
+
+A high-performance financial simulation engine capable of processing 1,000,000 agents at over 100,000 Ticks Per Second requires an observation pipeline capable of rendering high-frequency microstructural chaos in real time without introducing backpressure into the matching engine. Traditional Single Page Applications (SPAs) built on React or Vue introduce massive client-side state reconciliation overhead, which collapses when bombarded with thousands of state updates per second. 
+
+This chapter outlines the unified AMPS front-end and telemetry streaming architecture: combining server-side draft state management, binary WebSockets, WebGL hardware-accelerated canvas rendering, and Redis PubSub process decoupling.
+
+\section{The Failure of Client-Side Virtual DOMs}
+
+In a conventional web dashboard, server backends serialize state updates into JSON and transmit them over standard WebSockets. The client-side JavaScript engine parses each incoming JSON string, updates a centralized state tree (e.g., Redux), executes Virtual DOM diffing, and schedules DOM reflows.
+
+At high-frequency simulation rates, this architecture causes immediate catastrophic degradation:
+\begin{enumerate}
+    \item \textbf{JSON Parsing \& Memory Pressure:} Parsing multi-megabyte JSON payloads at 60 Hz exhausts the browser's V8 garbage collector, producing severe frame-rate drops and tab freezing.
+    \item \textbf{Layout Thrashing:} Mutating the browser's Document Object Model (DOM) to update order book depth ladders or price charts forces continuous recalculation of geometric styles, locking the browser's main UI thread.
+\end{enumerate}
+
+Similarly, attempting to use server-side rendering libraries like HTMX to swap tabular HTML markup at high frame rates fails due to layout thrashing. Consequently, AMPS enforces a complete separation: HTMX is utilized strictly for low-frequency configuration and draft state lifecycle management, while high-frequency telemetry is streamed via raw binary buffers directly into WebGL canvas shaders.
+
+\section{Binary WebSockets and WebGL Hardware Acceleration}
+
+To eliminate JSON serialization and DOM overhead, AMPS executes all high-frequency telemetry streaming through binary WebSockets and WebGL canvas rendering.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.85, transform shape,
+    box/.style={draw, rectangle, rounded corners, minimum width=3cm, minimum height=1.1cm, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box, fill=green!15] (engine) {Numba Matching\\(Writes Arrays)};
+    \node[box, fill=red!15] (redis) [right=1.5cm of engine] {Redis PubSub\\(Unix Socket)};
+    \node[box, fill=yellow!15] (fastapi) [right=1.5cm of redis] {FastAPI Server\\(\texttt{uvloop} Fanout)};
+    \node[box, fill=blue!15] (browser) [below=1.2cm of fastapi] {Browser WebGL\\(\texttt{DataView} $\rightarrow$ Shaders)};
+
+    \draw[arr] (engine) -- node[above] {\footnotesize Zero-Copy} (redis);
+    \draw[arr] (redis) -- node[above] {\footnotesize Async Sub} (fastapi);
+    \draw[arr] (fastapi) -- node[right] {\footnotesize Binary WS} (browser);
+\end{tikzpicture}
+\caption{The end-to-end telemetry streaming pipeline. Decoupling matching loops from client network I/O via local Redis PubSub and WebGL hardware acceleration.}
+\label{fig:webgl_redis_pipeline}
+\end{figure}
+
+\subsection{Binary C-Struct Serialization}
+
+When the matching engine concludes a simulation tick, it extracts the top-of-book depth, price levels, and agent telemetry directly from the contiguous NumPy arrays. Rather than formatting text strings, the engine packs the numerical metrics into a fixed-width binary C-struct. 
+
+On the client side, the web browser receives raw byte buffers over the WebSocket. JavaScript \texttt{DataView} and \texttt{Float32Array} typed buffers read the binary stream directly in $O(1)$ time, eliminating object allocations and garbage collection overhead.
+
+\subsection{GPU Shader Direct Rendering}
+
+Instead of manipulating HTML elements, the client dashboard renders order book depth, Order Flow Imbalance, and price trajectories onto an HTML5 \texttt{<canvas>} surface powered by WebGL. 
+
+The binary float buffers are bound directly to WebGL vertex buffer objects (VBOs). Custom vertex and fragment shaders render depth ladders and liquidity voiding as geometric polygons directly on the client's GPU, delivering rock-solid 60 FPS rendering regardless of market event volume.
+
+\section{I/O Decoupling via Redis PubSub}
+
+Directly streaming WebSocket payloads from the simulation core creates a dangerous vulnerability: \textbf{TCP Backpressure}.
+
+The Numba matching engine is pinned to host Gracemont E-cores to preserve microsecond execution determinism. If the simulation loop wrote directly to a client WebSocket, an intermittent Wi-Fi latency spike or network stall on the client would cause the operating system's TCP socket buffer to fill. The kernel would block subsequent \texttt{write()} syscalls, instantly halting the core financial matching engine and destroying FIFO price-time priority simply because an external observer experienced network jitter.
+
+To eliminate this vulnerability, AMPS decouples the core engine from external network I/O using local \textbf{Redis Publish/Subscribe (PubSub)}:
+
+\begin{enumerate}
+    \item \textbf{Fire-and-Forget Publisher:} At the end of each tick, a dedicated telemetry thread transmits the packed binary C-struct to a local Redis instance over a Unix domain socket (\texttt{amps\_telemetry}). Because Unix domain sockets operate entirely in host memory, this publish operation executes in under 50 microseconds and never blocks the engine.
+    \item \textbf{Asynchronous Multiplexing Subscriber:} The FastAPI web server \cite{selivanov2016uvloop}, running in an isolated process on dedicated cores, subscribes to Redis. FastAPI fans out the binary stream to arbitrary connected WebSockets.
+    \item \textbf{Stale Packet Dropping:} If an individual client connection buffers or lags, FastAPI automatically drops stale packets for that specific subscriber, completely isolating both the Redis queue and the matching engine from network congestion.
+\end{enumerate}
+
+\section{Draft State Management and Scenario Loading}
+
+Prior to executing a scenario, the user configures initial parameters -- such as macro narrative shocks, liquidity distributions, and agent archetype ratios -- through interactive HTML forms.
+
+To maintain strict validation without mutating live simulation memory, AMPS implements a \texttt{DraftService} pattern:
+\begin{enumerate}
+    \item Parameters are edited in the browser via HTMX, mutating an isolated server-side \texttt{DraftState} instance via \texttt{POST} endpoints.
+    \item When the operator commits the scenario, a \texttt{POST /api/scenario/load-draft} call executes.
+    \item The server validates all invariants, locks the \texttt{DraftState}, pre-allocates the contiguous NumPy double-buffers (Chapter \ref{ch:data_oriented_design}), pins the execution threads via \texttt{cgroups v2} (Chapter \ref{ch:hardware_topography}), and initializes the live simulation loop.
+\end{enumerate}
+
+Through this multi-tier front-end and telemetry architecture, AMPS provides zero-latency real-time observability while guaranteeing absolute microsecond determinism in the core financial engine.

@@ -1,5 +1,6 @@
 \chapter{High-Frequency Event Loops}
 \label{ch:high_frequency_event_loops}
+\label{ch:event_loops}
 
 Managing 400 autonomous Large Language Model agents as they asynchronously evaluate market states, compute semantic trajectories, and post limit orders presents a severe orchestration challenge. This chapter details the departure from standard Python multithreading in favor of cooperative multitasking via \texttt{asyncio}, the integration of the \texttt{uvloop} C-extension, and the implementation of Singleflight request coalescing to prevent catastrophic GPU cache stampedes.
 

@@ -1,33 +1,41 @@
-\chapter{Technical Hardware Optimization Blueprint}
+\chapter{Consolidated Hardware Optimization Matrix \& Workstation Memory Budgets}
 \label{ch:hardware_optimization_blueprint}
+\label{app:hardware_blueprint}
 
-Executing a high-resolution economic simulation involving 400 generative AI micro-agents interacting alongside a sub-millisecond, 1,000 Ticks Per Second (TPS) Limit Order Book (LOB) matching engine presents severe hardware bottlenecks when deployed on consumer-grade workstation silicon. Achieving deterministic throughput without triggering resource starvation demands a pre-allocated hardware budget and static physical memory partitioning. On a standard fixed workstation equipped with an Intel Core i7-14700K CPU, 128GB of system DDR5 RAM, and an NVIDIA RTX 5070 Ti GPU (16GB VRAM), unmanaged dynamic memory allocation rapidly leads to severe system degradation. To eliminate memory allocation collisions, avoid serialization overhead, and guarantee fixed microsecond latency bounds, physical resources must be mapped directly to dedicated execution roles within the Agentic Market Panic Simulator (AMPS).
+Executing a high-resolution economic simulation involving Tier 1 generative AI teacher swarms alongside a 1,000,000-agent Tier 2 distilled policy swarm and a sub-microsecond, 100,000+ Ticks Per Second (TPS) Limit Order Book (LOB) matching engine presents severe hardware bottlenecks when deployed on consumer-grade workstation silicon. Achieving deterministic throughput without triggering resource starvation demands a pre-allocated hardware budget and static physical memory partitioning. On a standard fixed workstation equipped with an Intel Core i7-14700K CPU, 128GB of system DDR5 RAM, and an NVIDIA RTX 5070 Ti GPU (16GB VRAM), unmanaged dynamic memory allocation rapidly leads to severe system degradation. To eliminate memory allocation collisions, avoid serialization overhead, and guarantee sub-0.2 microsecond policy evaluation bounds, physical resources must be mapped directly to dedicated execution roles within the Agentic Market Panic Simulator (AMPS).
 
 \section{Workstation Topography \& Core Memory Alignment}
 
-\subsection{Baseline Hardware State \& Memory Budget Allocation}
+\subsection{Baseline Hardware State \& Workstation Memory Budget Allocation}
 
-The architectural necessity for strict resource partitioning stems directly from the physical limits of consumer workstation components. The NVIDIA RTX 5070 Ti operates with a 16GB VRAM ceiling, of which approximately 10GB is idle and available for runtime allocation. If all 400 micro-agents simultaneously attempt to execute full 16-bit floating-point (FP16) inference or retain uncompressed Key-Value (KV) context windows in VRAM, the GPU memory space is instantly exhausted. This forces the operating system to swap memory pages over the PCIe Gen 5 bus, introducing severe bus contention.
+The architectural necessity for strict resource partitioning stems directly from the physical limits of consumer workstation components. The NVIDIA RTX 5070 Ti operates with a 16GB VRAM ceiling, partitioned between Tier 1 micro-agent LLM weights (1.8 GB), high-frequency pinned KV-caches (2.4 GB), and the offline PPO student batch training buffer (1.8 GB), consuming 6.00 GB total and leaving 10.0 GB of headroom. 
 
-Simultaneously, the Intel Core i7-14700K processor features a shared 30MB L3 cache across its performance and efficient cores. Unmanaged memory traversals by micro-agent inference tasks across the host's 128GB DDR5 memory space continually evict critical Limit Order Book arrays from CPU cache lines. This phenomenon--known as L3 cache thrashing--introduces millisecond-level execution jitter, destroying the temporal validity of the 1,000 TPS financial engine.
+Simultaneously, the Intel Core i7-14700K processor features a shared 30MB L3 cache across its performance and efficient cores. Unmanaged memory traversals across the host's 128GB DDR5 memory space continually evict critical Limit Order Book arrays from CPU cache lines. This phenomenon -- known as L3 cache thrashing -- introduces millisecond-level execution jitter, destroying the temporal validity of the financial engine.
 
-Table \ref{tab:hardware_budget_allocation} delineates the static physical hardware budget enforced across all AMPS subsystems.
+Table \ref{tab:hardware_budget_allocation} delineates the static physical hardware budget enforced across all AMPS subsystems for concurrent Tier 1 and Tier 2 execution.
 
 \begin{table}[htbp]
 \centering
-\small
-\begin{tabularx}{\textwidth}{l p{2.8cm} p{3.2cm} p{2.2cm} X}
+\footnotesize
+\renewcommand{\arraystretch}{0.95}
+\begin{tabularx}{\textwidth}{l p{3.2cm} r X}
 \toprule
-\textbf{Resource Type} & \textbf{Physical Capacity} & \textbf{Assigned Subsystem} & \textbf{Operational State} & \textbf{Target Footprint} \\
+\textbf{Component} & \textbf{Hardware Memory Domain} & \textbf{Allocated Size} & \textbf{Capacity Utilization} \\
 \midrule
-Host RAM & 128GB DDR5 & State Arrays, Paged Agents, Arrow Batches & $\sim$68GB Idle Budget & $\sim$56GB Dedicated Allocation \\
-GPU VRAM & 16GB (RTX 5070 Ti) & Priority KV-Caches, Active LLM Weights & $\sim$10GB Available & $\sim$9.5GB Dedicated Budget \\
-CPU Inference & Cores 0--15 (8 P-Cores) & Swarm Matrix Ops, Agent Inference & Raptor Cove & 16 Threads Assigned \\
-CPU Engine & Cores 16--27 (12 E-Cores) & uvloop, Numba LOB Engine, Routing & Gracemont & 12 Threads Assigned \\
-Shared Memory & POSIX (/dev/shm) & Arrow C Data Interface \& IPC Queues & RAM File System & $\sim$12GB Dedicated Allocation \\
+1,000,000 Agent Instance State Buffers ($<$10KB/Agent) & Host DDR5 RAM & 10.00 GB & 7.8\% (of 128GB Host RAM) \\
+Shared Policy Archetype Weights ($<$5M Params) & Host DDR5 RAM & 0.02 GB & $<$0.1\% (of 128GB Host RAM) \\
+Tier 1 Micro-Agent LLM Weights (Qwen1.5-0.5B) & GPU VRAM (RTX 5070 Ti) & 1.80 GB & 11.3\% (of 16GB VRAM) \\
+Pinned GPU KV-Caches (Top Whales / AMMs) & GPU VRAM (RTX 5070 Ti) & 2.40 GB & 15.0\% (of 16GB VRAM) \\
+Offline PPO Student Batch Training Buffer & GPU VRAM (RTX 5070 Ti) & 1.80 GB & 11.3\% (of 16GB VRAM) \\
+Zarr Trajectory Caches & Host DDR5 RAM & 24.00 GB & 18.8\% (of 128GB Host RAM) \\
+POSIX \texttt{/dev/shm} Shared Memory \& Arrow Buffers & Host DDR5 RAM & 16.00 GB & 12.5\% (of 128GB Host RAM) \\
+OS Kernel, Linux cgroups v2 \& System Overhead & Host DDR5 RAM & 12.00 GB & 9.4\% (of 128GB Host RAM) \\
+\midrule
+\textbf{Consolidated Host DDR5 RAM Utilization} & \textbf{Host DDR5 RAM} & \textbf{62.02 GB} & \textbf{48.4\% (65.98 GB Headroom)} \\
+\textbf{Consolidated GPU VRAM Utilization} & \textbf{GPU VRAM (RTX 5070 Ti)} & \textbf{6.00 GB} & \textbf{37.5\% (10.00 GB Headroom)} \\
 \bottomrule
 \end{tabularx}
-\caption{Static physical hardware budget and subsystem allocation on fixed workstation silicon.}
+\caption{Workstation physical memory budget allocation across host DDR5 RAM and dedicated GPU VRAM for concurrent Tier 1 generative teacher and Tier 2 distilled swarm execution (1,000,000 agents).}
 \label{tab:hardware_budget_allocation}
 \end{table}
 
@@ -768,21 +776,22 @@ Simultaneously, an automated Abstract Syntax Tree (AST) parser engine (invoked v
 
 \subsection{Consolidated Hardware Optimization Matrix}
 
-The four software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2$ $\mu$s (mean $3.8$ $\mu$s), and a Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash). Table \ref{tab:hardware_optimization_matrix} summarizes the four core architectural blueprints.
+The software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon from a 400-agent teacher generator to a 1,000,000-agent distilled production swarm. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2$ $\mu$s (mean $3.8$ $\mu$s), Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash), and a student policy forward pass latency of $\tau_{\text{execution}} \le 0.2\,\mu\text{s}$ ($<200$ ns). Table \ref{tab:hardware_optimization_matrix} summarizes the consolidated architectural blueprints.
 
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabularx}{\textwidth}{p{3.2cm} l p{3.0cm} X}
+\begin{tabularx}{\textwidth}{p{3.0cm} l p{2.8cm} X}
 \toprule
 \textbf{Optimization Blueprint} & \textbf{Effort} & \textbf{Hardware Leveraged} & \textbf{Primary Metric Impact} \\
 \midrule
 1. Tiered KV-Cache VRAM Pinning & Medium (1--2 d) & RTX 5070 Ti VRAM \& Pinned DDR5 RAM & Reduces PCIe transfers by $>$80\%; pins 80 AMMs in VRAM ($<$500 ns latency; 12.5 ms $\to$ 1.2 ms). \\
 2. Input Discretization \& Singleflight & Low (1 d) & CUDA Cores \& uvloop Event Loop & Coalesces 400 agent queries into 5--10 passes, eliminating cache stampedes and flattening VRAM spikes. \\
-3. Asynchronous Macro Ring Buffer & Low (1 d) & POSIX /dev/shm \& Gracemont E-Cores & Dual-provider failover (p99 SLA $<$ 800ms, 2.5s timeout); isolates 1,000 TPS LOB engine from API jitter; enables NPIV causal econometric isolation. \\
+3. Asynchronous Macro Ring Buffer & Low (1 d) & POSIX /dev/shm \& Gracemont E-Cores & Dual-provider failover (p99 SLA $<$ 800ms, 2.5s timeout); isolates LOB engine from API jitter; enables NPIV causal econometric isolation. \\
 4. Relaxed SIRC \& SSE4.2 POPCNT & Medium (2 d) & Gracemont E-Core ALU (SSE4.2 POPCNT) & Increases zero-GPU cache hit rate from 80\% to 95\%; reduces mean query latency from 12.5 ms to 3.8 $\mu$s. \\
+5. Distilled Policy Swarm (1M Agents) & High (3--4 d) & Gracemont E-Cores (AVX2, BMI2, 4MB L2) & Sub-0.2 $\mu$s policy evaluation latency ($<$200 ns); scales to 1,000,000 agents; $>$100,000 TPS deterministic matching. \\
 \bottomrule
 \end{tabularx}
-\caption{Consolidated hardware optimization matrix and engineering roadmap.}
+\caption{Consolidated hardware optimization matrix and engineering roadmap across Tier 1 teacher and Tier 2 distilled execution.}
 \label{tab:hardware_optimization_matrix}
 \end{table}

@@ -1,0 +1,78 @@
+\chapter{Reference Implementation: Singleflight Request Coalescing}
+\label{app:reference_singleflight}
+
+This appendix provides the reference Python implementation for the Singleflight Request Coalescing architecture \cite{colakel2026singleflight} discussed in Chapter \ref{ch:event_loops}. This exact concurrency pattern is deployed within the AMPS asynchronous event loop on Raptor Cove P-cores to prevent GPU cache stampedes when hundreds of Tier 1 micro-agents simultaneously request inference for identical macroeconomic narrative shocks.
+
+\section{The Singleflight Mutex Map}
+
+The implementation relies on an \texttt{asyncio.Lock} to guarantee thread-safe mutations to an in-memory dictionary of active promises (\texttt{asyncio.Future}).
+
+\begin{lstlisting}[language=Python, caption={Reference Implementation of Singleflight Request Coalescing in Python}]
+import asyncio
+from typing import Any, Callable, Coroutine, Dict, Tuple
+
+class Singleflight:
+    """
+    Prevents GPU cache stampedes by coalescing simultaneous identical async calls 
+    into a single GPU inference execution pass.
+    """
+    def __init__(self) -> None:
+        # Maps a unique prompt hash to an active Future
+        self._active_calls: Dict[str, asyncio.Future] = {}
+        # Tracks the number of waiters per key
+        self._waiter_counts: Dict[str, int] = {}
+        # Mutex to protect internal maps during await transitions
+        self._lock: asyncio.Lock = asyncio.Lock()
+
+    async def execute(
+        self, 
+        key: str, 
+        coro_fn: Callable[[], Coroutine[Any, Any, Any]]
+    ) -> Tuple[Any, bool, int]:
+        """
+        Execute an asynchronous call. If concurrent callers share the same key,
+        only the first caller executes coro_fn. Concurrent callers await the
+        first caller's Future in O(1) time.
+        
+        Returns:
+            Tuple containing:
+            - The result of the coroutine
+            - Boolean flag indicating whether this caller executed the coroutine
+            - Integer count of total callers sharing this evaluated result
+        """
+        async with self._lock:
+            if key in self._active_calls:
+                future = self._active_calls[key]
+                self._waiter_counts[key] += 1
+                is_first = False
+            else:
+                future = asyncio.get_event_loop().create_future()
+                self._waiter_counts[key] = 1
+                self._active_calls[key] = future
+                is_first = True
+
+        if is_first:
+            try:
+                result = await coro_fn()
+                future.set_result(result)
+                waiters = self._waiter_counts.get(key, 1)
+                return result, True, waiters
+            except Exception as e:
+                future.set_exception(e)
+                raise
+            finally:
+                async with self._lock:
+                    self._active_calls.pop(key, None)
+                    self._waiter_counts.pop(key, None)
+        else:
+            result = await future
+            return result, False, 0
+\end{lstlisting}
+
+\section{Execution Metrics and GPU VRAM Preservation}
+
+By wrapping the \texttt{llama.cpp} inference calls inside this \texttt{Singleflight.execute()} method, AMPS guarantees that when the 671B Macro Orchestrator broadcasts an 8-K filing, the 400 micro-agents first attempt to execute the \textit{Base Semantic Parsing} prompt. Because this parsing prompt is identical across all agents, the string is hashed to an SHA-256 \texttt{key}. 
+
+Agent 1 acquires the lock, registers the Future, and dispatches the prompt to the GPU (consuming VRAM for the KV Cache). Agents 2 through 400 instantly hit the \texttt{key in self.\_active\_calls} branch and yield control to the event loop. They do not execute their unique, memory-intensive psychological profiles until the base semantic parsing is coalesced and distributed. 
+
+Without this 60-line block of code, Agents 2 through 400 would simultaneously allocate redundant KV caches for the exact same 8-K parsing phase, triggering catastrophic Out-Of-Memory (OOM) faults on the dedicated 16GB RTX 5070 Ti GPU.

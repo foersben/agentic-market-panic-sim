@@ -1,4 +1,4 @@
-\chapter{The Anatomy of Macroeconomic Contagion}
+\chapter{The Anatomy of Macroeconomic Contagion \& Bounded Rationality}
 \label{ch:anatomy_panic}
 
 The study of market microstructure focuses on the intricate processes, temporal dynamics, and algorithmic outcomes of exchanging assets under explicitly defined, latency-sensitive trading rules \cite{ohara1995market}. To construct an Agentic Market Panic Simulator (AMPS), one must first thoroughly deconstruct the financial phenomena it seeks to replicate. 
@@ -9,7 +9,7 @@ A market panic -- or flash crash -- is not merely a rapid depreciation of asset 
 
 In classical financial economics, specifically under the Efficient Market Hypothesis (EMH), actors are presumed to be perfectly rational utility-maximizers. Traditional macroeconomic models (such as Dynamic Stochastic General Equilibrium or DSGE models) rely heavily on representative agents who instantly update their beliefs using Bayes' theorem when presented with new information \cite{ohara1995market}.
 
-While these models are mathematically elegant and perform well during periods of equilibrium, they structurally fail during crises. Real-world market participants suffer from bounded rationality. They face cognitive limits in processing massive streams of high-frequency data, they succumb to emotional contagion, and their execution is constrained by technological latency.
+While these models are mathematically elegant and perform well during periods of equilibrium, they structurally fail during crises. Real-world market participants suffer from bounded rationality. They face cognitive limits in processing massive streams of high-frequency data, they succumb to emotional contagion, and their execution is constrained by technological latency. In AMPS, these non-linear bounded rationality dynamics -- encompassing asymmetric loss aversion \cite{kahneman1979prospect}, panic-induced order cancellations, cognitive friction, and belief divergence -- are generated through rich multi-agent generative teacher swarms and captured via continuous state-action policy mappings $\pi_{\theta}(a|s)$ distilled directly from teacher trajectories into high-speed student policies.
 
 \begin{figure}[htbp]
 \centering

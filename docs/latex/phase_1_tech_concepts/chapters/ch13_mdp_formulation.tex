@@ -1,0 +1,136 @@
+\chapter{MDP Formulation, Action Masking \& Multi-Objective PPO Reward Calibration}
+\label{ch:mdp_formulation}
+
+Transitioning from an online generative LLM simulation loop to an offline trajectory distillation pipeline requires translating unstructured natural language interactions and cognitive agent decisions into a formal Markov Decision Process (MDP). While Large Language Models operate over discrete sequences of textual tokens, microsecond-scale Limit Order Book execution demands compact, standardized numerical vectors that can be evaluated in sub-microsecond latency bounds on bare-metal hardware.
+
+This chapter formalizes the mathematical foundation of the Tier 2 student policy engine: the state space representation $S_t \in \mathbb{R}^{151}$, the discrete action space with microstructural masking, and the multi-objective Proximal Policy Optimization (PPO) reward formulation anchored by Kullback-Leibler (KL) divergence against live teacher distributions.
+
+\section{The Markov Decision Process Framework}
+
+We formalize the financial decision environment of an autonomous agent as an infinite-horizon, discounted Markov Decision Process defined by the tuple $(\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma_{\text{discount}})$, where:
+\begin{itemize}
+    \item $\mathcal{S}$ is the continuous state space capturing local order book depth, market microstructure metrics, inventory exposure, and global narrative context.
+    \item $\mathcal{A}$ is the discrete action space of order submissions, price offsets, and cancellations.
+    \item $\mathcal{P}: \mathcal{S} \times \mathcal{A} \to \Delta(\mathcal{S})$ represents the transition probability density governing the physical Limit Order Book matching engine.
+    \item $\mathcal{R}: \mathcal{S} \times \mathcal{A} \to \mathbb{R}$ is the scalar reward function balancing financial profitability, inventory risk, and behavioral fidelity.
+    \item $\gamma_{\text{discount}} \in (0, 1)$ is the temporal discount factor, typically set to $\gamma_{\text{discount}} = 0.99$.
+\end{itemize}
+
+\section{MDP State Space Formulation ($S_t \in \mathbb{R}^{151}$)}
+
+The student policy state vector $S_t \in \mathbb{R}^{151}$ consolidates Level 2 market depth, top-of-book order flow imbalance, bid-ask spread, the agent's net portfolio balance, and the unpacked macroeconomic narrative embedding:
+\begin{equation}
+    S_t = \left[ L_t^{(\text{L1..L5})}, \, \text{OFI}_t, \, S_t, \, \text{Inventory}_t, \, B_t \right] \in \mathbb{R}^{151}
+\end{equation}
+
+The exact mathematical sub-vectors and dimensionalities of $S_t$ are structured as follows:
+
+\subsection{Level 2 Order Book Depth ($L_t^{(\text{L1..L5})} \in \mathbb{R}^{20}$)}
+The normalized Level 2 market depth vector captures the top-5 price levels and resting share volumes on both sides of the book:
+\begin{equation}
+    L_t^{(\text{L1..L5})} = \left[ P_{\text{bid}}^{(1..5)}, \, V_{\text{bid}}^{(1..5)}, \, P_{\text{ask}}^{(1..5)}, \, V_{\text{ask}}^{(1..5)} \right] \in \mathbb{R}^{20}
+\end{equation}
+Prices are normalized relative to the current mid-price $P_{\text{mid}, t} = \frac{1}{2}(P_{\text{ask}}^{(1)} + P_{\text{bid}}^{(1)})$, and volumes are normalized using a rolling exponential moving average of traded volume.
+
+\subsection{Scalar Order Flow Imbalance ($\text{OFI}_t \in \mathbb{R}^1$)}
+Order Flow Imbalance measures net directional order flow pressure at top-of-book depth over a discrete time step $\Delta t$:
+\begin{equation}
+    \text{OFI}_t = \Delta V_{\text{bid}, t} - \Delta V_{\text{ask}, t} \in \mathbb{R}^1
+\end{equation}
+where $\Delta V_{\text{bid}, t}$ and $\Delta V_{\text{ask}, t}$ reflect changes in resting limit depth accounting for fills, cancellations, and new arrivals.
+
+\subsection{Inside Bid-Ask Spread ($S_t \in \mathbb{R}^1$)}
+The inside spread measures prevailing market liquidity and adverse selection risk:
+\begin{equation}
+    S_t = P_{\text{ask}}^{(1)} - P_{\text{bid}}^{(1)} \in \mathbb{R}^1
+\end{equation}
+
+\subsection{Agent Net Position ($\text{Inventory}_t \in \mathbb{R}^1$)}
+The scalar inventory position reflects the agent's current net holdings of the underlying asset, bounded by maximum portfolio risk limits.
+
+\subsection{Narrative Embedding Signature ($B_t \in \mathbb{R}^{128}$)}
+The global macroeconomic narrative shock -- synthesized by the 671B Macro Orchestrator and compressed via Matryoshka Representation Learning (MRL) and 1-bit Binary Quantization (BQ) -- is unpacked into a dense 128-dimensional floating-point signature:
+\begin{equation}
+    B_t = [b_1, b_2, \dots, b_{128}] \in \mathbb{R}^{128}, \quad b_i \in \{-1.0, +1.0\}
+\end{equation}
+
+\noindent Summing these components yields the exact state dimensionality:
+\begin{equation}
+    \dim(S_t) = 20 + 1 + 1 + 1 + 128 = 151 \implies S_t \in \mathbb{R}^{151}
+\end{equation}
+
+\section{Action Space ($A_t$) and Microstructural Action Masking}
+
+The student policy output maps to a discrete action tuple:
+\begin{equation}
+    A_t = (\text{action}_t, \, \Delta P_t, \, V_t)
+\end{equation}
+\begin{itemize}
+    \item $\text{action}_t \in \{0, 1, 2\} \implies \{\text{BUY}, \, \text{SELL}, \, \text{HOLD/CANCEL}\}$.
+    \item $\Delta P_t \in \mathbb{Z}$: Discrete price offset in ticks relative to the Best Bid or Best Ask.
+    \item $V_t \in \mathbb{Z}^+$: Submitted order volume based on balance sheet allocation.
+\end{itemize}
+
+\subsection{Microstructural Action Masking \& Regulatory Invariants}
+
+To enforce physical and regulatory market constraints without destabilizing reinforcement learning policy updates, AMPS applies \textbf{Action Masking} directly to the student policy logits before sampling:
+\begin{enumerate}
+    \item \textbf{Chinese Equity ($hkgsas$) $T+1$ Settlement Rule:} In jurisdictions enforcing $T+1$ settlement, shares purchased during the current trading session cannot be sold intraday. If $\text{Inventory}_{\text{today}} > 0$ and $\text{Inventory}_{\text{settled}} = 0$, the action $\text{action}_t = \text{SELL}$ is masked out ($M(\text{action}_t = \text{SELL}) = 0$), preventing illegal intraday round-trip scalping.
+    \item \textbf{Static Daily Board Limits (\textit{zh\={a}ngdi\`{e}t\'{i}ngb\v{a}n}):} When Limit Order Book transaction prices reach static $\pm 10\%$ daily circuit breaker limits, submitted volume for orders attempting to push prices beyond the band is clamped to zero ($V_t = 0$).
+\end{enumerate}
+
+\section{Multi-Objective PPO Reward Calibration Function ($R_t$)}
+
+To prevent student policies from exploiting simulator artifacts while preserving teacher bounded rationality, offline Proximal Policy Optimization (PPO) \cite{schulman2017proximal} utilizes a calibrated multi-objective reward function incorporating a Kullback-Leibler (KL) divergence penalty against the live teacher distribution:
+\begin{equation}
+    R_t = \text{PnL}_t - \gamma \cdot (\text{Inventory}_t)^2 - \beta \cdot D_{\text{KL}}(P_{\text{PPO}} \,||\, P_{\text{LLM}})
+\end{equation}
+
+\subsection{Component Derivations \& Sensitivity Limits}
+
+\paragraph{Mark-to-Market PnL ($\text{PnL}_t$)}
+Evaluates the change in aggregate portfolio wealth:
+\begin{equation}
+    \text{PnL}_t = (\text{Cash}_t + \text{Inventory}_t \cdot P_{\text{mid}, t}) - (\text{Cash}_{t-1} + \text{Inventory}_{t-1} \cdot P_{\text{mid}, t-1})
+\end{equation}
+
+\paragraph{Quadratic Inventory Penalty ($\gamma \cdot (\text{Inventory}_t)^2$)}
+Enforces inventory risk aversion, parameterized by $\gamma \in [10^{-4}, 10^{-2}]$. The mathematical limit behavior is characterized by:
+\begin{align}
+    \lim_{\gamma \to 0} \mathbb{E}[\text{Inventory}_t] &= \infty \quad \text{(Agent accumulates toxic inventory during panics)} \\
+    \lim_{\gamma \to \infty} \pi_{\theta}(a|s) &= \text{CANCEL} \quad \text{(Agent prematurely cancels quotes during normal spread noise)}
+\end{align}
+
+\paragraph{KL-Divergence Teacher Anchor ($\beta \cdot D_{\text{KL}}(P_{\text{PPO}} \,||\, P_{\text{LLM}})$)}
+Constrains student policy distributions ($P_{\text{PPO}}$) against live LLM teacher decision distributions ($P_{\text{LLM}}$), parameterized by $\beta \in [0.01, 0.10]$:
+\begin{equation}
+    D_{\text{KL}}(P_{\text{PPO}} \,||\, P_{\text{LLM}}) = \sum_{a \in \mathcal{A}} P_{\text{PPO}}(a \mid S_t) \ln \left( \frac{P_{\text{PPO}}(a \mid S_t)}{P_{\text{LLM}}(a \mid S_t)} \right)
+\end{equation}
+The boundary behavior highlights the essential regularizing role of the teacher anchor:
+\begin{align}
+    \lim_{\beta \to 0} P_{\text{PPO}} &\to \pi_{\text{arb}} \quad \text{(Policy collapses into high-frequency statistical arbitrage)} \\
+    \lim_{\beta \to \infty} P_{\text{PPO}} &\to P_{\text{LLM}} \quad \text{(Optimization locked to slow teacher, preventing execution scaling)}
+\end{align}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    box/.style={draw, rectangle, rounded corners=4pt, align=center, font=\small, inner sep=6pt},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box, fill=blue!10] (state) {State Extraction ($S_t \in \mathbb{R}^{151}$)\\ \footnotesize L2 Depth (20) + OFI (1) + Spread (1) + Inv (1) + MRL (128)};
+    \node[box, fill=purple!10] (mask) [right=1.2cm of state] {Action Masking\\ \footnotesize $T+1$ Rules \& Board Limits};
+    \node[box, fill=orange!10] (student) [below=1.2cm of mask] {Tier 2 Student Policy ($\pi_\theta$)\\ \footnotesize 2-Layer MLP Forward Pass (<0.2$\mu$s)};
+    \node[box, fill=green!10] (reward) [below=1.2cm of state] {Multi-Objective Reward ($R_t$)\\ \footnotesize $\text{PnL} - \gamma \text{Inv}^2 - \beta D_{\text{KL}}(P_{\text{PPO}} || P_{\text{LLM}})$};
+
+    \draw[arr] (state) -- (mask);
+    \draw[arr] (mask) -- (student);
+    \draw[arr] (student) -- (reward);
+    \draw[arr] (reward) -- node[left, font=\scriptsize] {PPO Policy Gradient} (state);
+\end{tikzpicture}
+\caption{The formal MDP step in AMPS. State vectors are extracted from the LOB and SIRC caches, filtered through regulatory action masks, evaluated via the student MLP, and calibrated via multi-objective PPO rewards.}
+\label{fig:mdp_formulation_step}
+\end{figure}
+
+This mathematical MDP structure provides the formal interface for harvesting multi-patch scenario trajectories.

@@ -1,0 +1,51 @@
+\chapter{Mathematical Derivations of LOB Metrics}
+\label{app:math_derivations}
+
+To ensure complete empirical transparency and mathematical reproducibility, this appendix formally derives the core market microstructure metrics utilized across the Data-Flow Matrices (Chapter \ref{ch:epistemic_soundness}), the Offline RL MDP state formulations (Chapter \ref{ch:mdp_formulation}), and the Non-Parametric Econometric Audits (Chapter \ref{ch:non_parametric_validation}). All derivations adhere to the foundational market microstructure framework established by O'Hara \cite{ohara1995market} and Cartea et al. \cite{cartea2015algorithmic}.
+
+\section{Order Flow Imbalance (OFI)}
+
+Order Flow Imbalance (OFI) is the primary predictive metric for microsecond price movements and adverse selection pressure. It measures the net directional volume pressure exerted by market orders against resting limit depth at the Best Bid ($P_{\text{bid}}^{(1)}$) and Best Ask ($P_{\text{ask}}^{(1)}$) levels.
+
+Let $\Delta V_{\text{bid}, t}$ denote the net change in volume at the best bid, and $\Delta V_{\text{ask}, t}$ denote the net change in volume at the best ask over a discrete tick interval $\Delta t$, accounting for new submissions, cancellations, and trade executions. The normalized OFI is defined as:
+
+\begin{equation}
+    \text{OFI}_t = \frac{\Delta V_{\text{bid}, t} - \Delta V_{\text{ask}, t}}{\Delta V_{\text{bid}, t} + \Delta V_{\text{ask}, t}}
+\end{equation}
+
+where $\text{OFI}_t \in [-1, 1]$. An $\text{OFI}_t$ approaching $+1$ indicates absolute buy-side liquidity consumption and bid-queue replenishment (predicting imminent upward price revisions), while $\text{OFI}_t \to -1$ indicates severe sell-side pressure and bid-queue depletion.
+
+\section{Volume-Weighted Average Price (VWAP)}
+
+Because large institutional orders consume resting depth across multiple levels of the Limit Order Book (inducing execution slippage and temporary market impact), the realized execution price of a block trade is not the top-of-book Best Ask or Best Bid, but the Volume-Weighted Average Price (VWAP).
+
+If a market buy order of total volume $Q$ sweeps depth across $N$ price levels ($L_1, L_2, \dots, L_N$), with each level $i$ providing resting volume $v_i$ at price $p_i$, the VWAP is given by:
+
+\begin{equation}
+    \text{VWAP} = \frac{\sum_{i=1}^{N} p_i \cdot v_i}{Q}
+\end{equation}
+
+subject to the volume conservation constraint:
+
+\begin{equation}
+    \sum_{i=1}^{N} v_i = Q
+\end{equation}
+
+\section{Bid-Ask Spread and Liquidity Voiding}
+
+The inside bid-ask spread $S_t$ at time $t$ is defined as the gap between the top-of-book quotes:
+
+\begin{equation}
+    S_t = P_{\text{ask}, t}^{(1)} - P_{\text{bid}, t}^{(1)}
+\end{equation}
+
+During an acute liquidity cascade (such as the Lehman Liquidity Black Hole scenario), resting limit orders on the bid side may be completely depleted across all $d$ tracked book levels before new quotes arrive -- an empirical condition known as a \textbf{Liquidity Void}. In the AMPS Numba engine, a Liquidity Void indicator $\Lambda_t$ is computed via branchless SIMD reduction:
+
+\begin{equation}
+    \Lambda_t = \begin{cases} 
+      1 & \text{if } \sum_{i=1}^{d} V_{\text{bid}, t}^{(i)} = 0 \\
+      0 & \text{otherwise}
+   \end{cases}
+\end{equation}
+
+When $\Lambda_t = 1$, the bid price $P_{\text{bid}}^{(1)}$ is undefined. The engine immediately flags the condition, triggering the Limit Up--Limit Down (LULD) volatility halt routines detailed in Chapter \ref{ch:algorithmic_market_making}.

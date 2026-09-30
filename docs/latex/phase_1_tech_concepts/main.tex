@@ -32,7 +32,8 @@
 }
 
 % Header/Footer styling
-\setlength{\headheight}{14pt}
+\setlength{\headheight}{26pt}
+\addtolength{\topmargin}{-12pt}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\leftmark}
@@ -52,7 +53,7 @@
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-The Agentic Market Panic Simulator (AMPS) addresses a critical gap in economic modeling: simulating the irrational, sentiment-driven dynamics of macroeconomic contagion at a microsecond scale. Utilizing a swarm of 400 generative Large Language Models (LLMs) interacting with a deterministic Limit Order Book (LOB), AMPS bridges behavioral finance and bare-metal high-performance computing. This book presents a cohesive architectural narrative detailing the empirical necessity of traditional finance datasets, the mitigation of computational bottlenecks via Singleflight request coalescing and zero-copy Apache Arrow data pipelines, and the hardware-level necessity of relying on SSE4.2 \texttt{popcnt} intrinsics over AVX-512 in heterogeneous CPU topologies. Through Matryoshka Representation Learning and 1.58-bit ternary quantization, AMPS achieves latency-optimized generative simulation on consumer-grade hardware.
+The Agentic Market Panic Simulator (AMPS) addresses a critical gap in high-frequency financial modeling: capturing the non-linear dynamics of macroeconomic contagion, liquidity cascades, and sentiment decay at scale. To reconcile the cognitive depth of generative AI with microsecond execution determinism, AMPS introduces a Two-Tier Architecture anchored by Offline Reinforcement Learning (RL) Trajectory Distillation. Tier 1 operates as an offline behavioral teacher engine, synthesizing macroeconomic shocks via a 671B Macro Orchestrator and 400 micro-agents (Qwen1.5-0.5B with 1.58-bit ternary quantization), Singleflight request coalescing, and 128-bit SIRC semantic caching. Zero-copy Apache Arrow trajectory streams feed GPU-accelerated Proximal Policy Optimization (PPO) with multi-objective KL-anchored reward calibration. The resulting compact policies deploy as Tier 2: a 1,000,000-agent production swarm evaluating 2-layer MLPs on host CPU Gracemont E-cores at deterministic, sub-0.2 microsecond latency and throughputs exceeding 100,000 Ticks Per Second. This treatise presents an exhaustive architectural narrative detailing market microstructure foundations, heterogeneous Raptor Lake core isolation, zero-copy POSIX shared memory pipelines, multi-patch scenario dataset assembly, and automated epistemic soundness verification gates on fixed workstation silicon.
 
 \tableofcontents
 
@@ -65,39 +66,40 @@ The Agentic Market Panic Simulator (AMPS) addresses a critical gap in economic m
 \include{chapters/ch03_algorithmic_market_making}
 \include{chapters/ch04_tradfi_vs_crypto}
 
-% Part II: High-Performance Systems Engineering
-\part{High-Performance Systems Engineering}
+% Part II: Bare-Metal Hardware Topography & High-Performance Systems
+\part{Bare-Metal Hardware Topography \& High-Performance Systems}
 \include{chapters/ch05_hardware_topography}
 \include{chapters/ch06_data_oriented_design}
 \include{chapters/ch07_zero_copy_ipc}
 \include{chapters/ch08_event_loops}
 
-% Part III: Cognitive Architectures & AI Topologies
-\part{Cognitive Architectures \& AI Topologies}
+% Part III: Cognitive AI Topologies & Semantic Compression
+\part{Cognitive AI Topologies \& Semantic Compression}
 \include{chapters/ch09_generative_swarms}
 \include{chapters/ch10_semantic_caching}
 \include{chapters/ch11_hardware_acceleration_search}
 \include{chapters/ch12_network_topologies}
-\include{chapters/ch13_non_parametric_modeling}
 
-% Part IV: Implementation & ML Ops Pipelines
-\part{Implementation \& Epistemology}
-\include{chapters/ch14_data_integration}
-\include{chapters/ch15_stochastic_replay}
-\include{chapters/ch16_epistemic_soundness}
+% Part IV: Offline RL Trajectory Distillation & Million-Agent Scaling
+\part{Offline RL Trajectory Distillation \& Million-Agent Scaling}
+\include{chapters/ch13_mdp_formulation}
+\include{chapters/ch14_multi_patch_harvesting}
+\include{chapters/ch15_distilled_swarm_scaling}
+\include{chapters/ch16_non_parametric_validation}
 
-% Part V: Operational Dashboards & Matrices
-\part{Operational Dashboards \& Case Studies}
-\include{chapters/ch17_frontend}
-\include{chapters/ch18_websockets}
-\include{chapters/ch19_case_studies}
+% Part V: Implementation, Telemetry & Epistemic Soundness
+\part{Implementation, Telemetry \& Epistemic Soundness}
+\include{chapters/ch17_byod_data_integration}
+\include{chapters/ch18_stochastic_replay}
+\include{chapters/ch19_epistemic_soundness}
+\include{chapters/ch20_frontend_streaming}
 
-% Part VI: Appendices
-\part{Appendices}
+% Part VI: Technical Appendices
+\part{Technical Appendices}
 \appendix
-\include{chapters/ch20_math_derivations}
-\include{chapters/ch21_singleflight_code}
-\include{chapters/ch22_hardware_optimization_blueprint}
+\include{chapters/app_a_math_derivations}
+\include{chapters/app_b_singleflight_code}
+\include{chapters/app_c_hardware_blueprint}
 
 \backmatter
 \bibliographystyle{plain}
