@@ -52,6 +52,6 @@ Instead of writing to a slow SQL database or an inefficient JSON file, the simul
 
 The core mandate of the AMPS replay system is that \textbf{Playback must read historical Zarr matrices directly, bypassing all engine loop logic.}
 
-When a researcher wishes to investigate the flash crash at tick 45,000, they load the Zarr file into the AMPS UI. The UI does not initialize the Numba matching engine, nor does it spin up the 70B God Agent. It merely renders the raw NumPy arrays stored in the Zarr chunks. 
+When a researcher wishes to investigate the flash crash at tick 45,000, they load the Zarr file into the AMPS UI. The UI does not initialize the Numba matching engine, nor does it invoke the Macro Orchestrator God Agent. It merely renders the raw NumPy arrays stored in the Zarr chunks. 
 
 This guarantees 100\% pixel-perfect deterministic replay of the crash, allowing engineers to step backward and forward through time, inspecting the exact Limit Order Book state and the specific cognitive intent of any micro-agent at the exact microsecond the panic crystallized.

@@ -69,7 +69,7 @@ class Singleflight:
 
 \section{Execution Metrics and GPU VRAM Preservation}
 
-By wrapping the \texttt{llama.cpp} inference calls inside this \texttt{Singleflight.execute()} method, AMPS guarantees that when the 70B God Agent broadcasts an 8-K filing, the 400 micro-agents first attempt to execute the \textit{Base Semantic Parsing} prompt. Because this parsing prompt is identical across all agents, the string is hashed to a \texttt{key}. 
+By wrapping the \texttt{llama.cpp} inference calls inside this \texttt{Singleflight.execute()} method, AMPS guarantees that when the 671B God Agent broadcasts an 8-K filing, the 400 micro-agents first attempt to execute the \textit{Base Semantic Parsing} prompt. Because this parsing prompt is identical across all agents, the string is hashed to a \texttt{key}. 
 
 Agent 1 acquires the lock, registers the Future, and sends the prompt to the GPU (consuming VRAM for the KV Cache). Agents 2 through 400 instantly hit the `key in self.\_active\_calls` branch and go to sleep. They do not execute their unique, memory-intensive psychological profiles until the base semantic parsing is coalesced and distributed. 
 

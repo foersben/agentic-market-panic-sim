@@ -18,10 +18,10 @@ Crucially, to maintain instruction set parity across these asymmetric cores, Int
 \subsection{The Danger of Thread Migration}
 
 In AMPS, the primary computational burden is fractured into two entirely different profiles. 
-1. The 400 micro-agents evaluating their generative semantic states. This is a memory-bound matrix multiplication workload running across the P-Cores. (Note: The 70B Macro Orchestrator God Agent is offloaded to an external API to preserve local resources).
+1. The 400 micro-agents evaluating their generative semantic states. This is a memory-bound matrix multiplication workload running across the P-Cores. (Note: The 671B MoE Macro Orchestrator God Agent is offloaded via the Dual-Provider API Abstraction layer to preserve local resources).
 2. The Limit Order Book (LOB) matching engine. This is a latency-sensitive, highly-concurrent, branching workload.
 
-Because Gracemont E-Cores and Raptor Cove P-Cores share the same L3 cache on the die, unconstrained execution of the memory-bound micro-agents across the entire processor would rapidly thrash the L3 cache, starving the LOB engine of its essential data. Furthermore, if the Linux scheduler is allowed to natively manage these threads, it will inevitably migrate threads across P-Core and E-Core boundaries. When a thread migrates from a P-Core to an E-Core, its local L2 cache context is invalidated. In a financial matching engine aiming for 1,000 Ticks Per Second (TPS), this cache thrashing introduces catastrophic \textit{execution jitter}--stalling the LOB matching engine for milliseconds and destroying the temporal validity of the simulation.
+Because Gracemont E-Cores and Raptor Cove P-Cores share the same L3 cache on the die, unconstrained execution of the memory-bound micro-agents across the entire processor would rapidly thrash the L3 cache, starving the LOB engine of its essential data. Furthermore, if the Linux scheduler is allowed to natively manage these threads, it will inevitably migrate threads across P-Core and E-Core boundaries. When a thread migrates from a P-Core to an E-Core, its local L2 cache context is invalidated. In a financial matching engine aiming for 1,000 Ticks Per Second (TPS), this cache thrashing introduces catastrophic \textit{execution jitter} -- stalling the LOB matching engine for milliseconds and destroying the temporal validity of the simulation.
 
 To mitigate this shared L3 cache thrashing on consumer hardware, AMPS bypasses enterprise solutions like Intel RDT CAT. Instead, it utilizes strict Linux \texttt{cgroups} v2 \cite{corbet2019cgroups} and \texttt{numactl} memory policies to pin the E-Core matching engine's working set entirely within the localized 4MB L2 cache of the Gracemont cluster. By ensuring the LOB state arrays never exceed the L2 cache boundaries, the E-cores never need to fetch from the heavily contested L3 cache, granting them immunity from the P-core memory transversals.
 
@@ -37,9 +37,9 @@ To resolve the heterogeneous scheduling catastrophe, AMPS enforces rigid Non-Uni
     mem/.style={draw, cylinder, shape border rotate=90, aspect=0.2, fill=yellow!20, minimum width=3cm, minimum height=1.5cm, align=center},
     arr/.style={<->, thick, >=stealth, dashed}
 ]
-    \node[core, fill=orange!20] (pcore) {Raptor Cove P-Cores\\(Cores 0--15)\\ \textbf{400 Micro-Agents Inference}};
+    \node[core, fill=orange!20] (pcore) {Raptor Cove P-Cores\\(Cores 0-15)\\ \textbf{400 Micro-Agents Inference}};
     \node[mem] (shm) [below=1.5cm of pcore] {\texttt{/dev/shm} Shared Memory\\(L3 Cache Boundary)};
-    \node[core, fill=cyan!20] (ecore) [below=1.5cm of shm] {Gracemont E-Cores\\(Cores 16--27)\\ \textbf{uvloop \& Numba LOB}};
+    \node[core, fill=cyan!20] (ecore) [below=1.5cm of shm] {Gracemont E-Cores\\(Cores 16-27)\\ \textbf{uvloop \& Numba LOB}};
     
     \draw[arr] (pcore) -- node[right] {Zero-Copy Output} (shm);
     \draw[arr] (shm) -- node[right] {Zero-Copy Input} (ecore);
@@ -48,7 +48,7 @@ To resolve the heterogeneous scheduling catastrophe, AMPS enforces rigid Non-Uni
 \label{fig:cpu_pinning_detail}
 \end{figure}
 
-By using the Linux \texttt{taskset} command (or \texttt{os.sched\_setaffinity} in Python), the simulation binds the micro-agents strictly to Cores 0--15 (the 8 hyper-threaded P-cores). Simultaneously, the \texttt{uvloop} event loop orchestrating the data pipelines, alongside the Numba JIT matching engine, is securely pinned to Cores 16--27 (the 12 E-cores). This physical isolation guarantees that the financial matching engine operates deterministically out of the Gracemont L2 cache, immune to the massive memory traversals occurring on the P-Cores.
+By using the Linux \texttt{taskset} command (or \texttt{os.sched\_setaffinity} in Python), the simulation binds the micro-agents strictly to Cores 0-15 (the 8 hyper-threaded P-cores). Simultaneously, the \texttt{uvloop} event loop orchestrating the data pipelines, alongside the Numba JIT matching engine, is securely pinned to Cores 16-27 (the 12 E-cores). This physical isolation guarantees that the financial matching engine operates deterministically out of the Gracemont L2 cache, immune to the massive memory traversals occurring on the P-Cores.
 
 \section{Memory Paging and the TLB Penalty}
 

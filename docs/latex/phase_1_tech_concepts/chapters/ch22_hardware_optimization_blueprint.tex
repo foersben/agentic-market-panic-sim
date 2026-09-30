@@ -343,7 +343,7 @@ def discretize_market_state(ofi_array: np.ndarray, vwap_dev_array: np.ndarray,
 
 \subsection{Singleflight Request Coalescing Engine Architecture}
 
-When the 70B Macro Orchestrator Agent broadcasts a major economic shock, all 400 micro-agents wake up simultaneously within the uvloop event loop to execute GPU inference. Without request deduplication, sending 400 simultaneous prompts causes a "cache stampede" or "thundering herd" problem, exhausting VRAM and crashing CUDA kernels. The Singleflight pattern prevents this by coalescing identical requests into a single execution pass.
+When the 671B MoE Macro Orchestrator Agent (DeepSeek V3 / Gemini 1.5 Flash) broadcasts a major economic shock, all 400 micro-agents wake up simultaneously within the uvloop event loop to execute GPU inference. Without request deduplication, sending 400 simultaneous prompts causes a "cache stampede" or "thundering herd" problem, exhausting VRAM and crashing CUDA kernels. The Singleflight pattern prevents this by coalescing identical requests into a single execution pass.
 
 \begin{figure}[htbp]
 \centering
@@ -388,11 +388,11 @@ The step-by-step operational lifecycle proceeds as follows:
 
 \section{Optimization Blueprint 3: Asynchronous Non-Blocking Macro Ring Buffer}
 
-\subsection{Decoupling External 70B God Agent API Calls}
+\subsection{Decoupling Macro Orchestrator API Calls via Dual-Provider Abstraction}
 
-The 70B Macro Orchestrator (God Agent) operates on a slower macro timescale, generating systemic narrative shocks (such as simulated financial reports or regulatory announcements). Because running a 70B parameter model locally requires over 40GB of VRAM/RAM--exceeding host hardware capacity--its inference is offloaded to an external low-latency API endpoint over WebSockets or HTTP connections.
+The 671B MoE Macro Orchestrator (God Agent) operates on a slower macro timescale, generating systemic narrative shocks (such as simulated financial reports or regulatory announcements). Because running a 671-Billion parameter Mixture-of-Experts (MoE) model locally far exceeds host workstation capacities, the God Agent's inference is offloaded via a dynamic Dual-Provider API Abstraction layer. All external network calls targeting the God Agent must be routed asynchronously through the unified \texttt{DualProviderClient}; direct REST requests or HTTP calls to vendor endpoints are strictly prohibited.
 
-External API calls introduce significant network latency jitter, with response times varying from 500 milliseconds to over 10 seconds. Allowing the core matching engine loop to await external network I/O directly would lock the entire system, halting the 1,000 TPS LOB matching engine. To prevent network blocking, AMPS decouples macro narrative transmission using an Asynchronous Non-Blocking Ring Buffer running in shared memory (\texttt{/dev/shm}).
+The client dispatches primary requests to DeepSeek V3 (\texttt{deepseek-chat}). If an API timeout exceeding 2,500ms or an HTTP 429/5xx status code is encountered, the client triggers an immediate automated fallback to Gemini 1.5 Flash (\texttt{gemini-1.5-flash}). Concurrently, a non-blocking background worker initiates periodic health-check probes against DeepSeek V3 until normal connectivity is restored. This dual-provider topology maintains a p99 nominal latency SLA of $< 800$ms, ensuring uninterrupted streaming into the POSIX shared memory (\texttt{/dev/shm}) ring buffer and preventing event-loop starvation across the 1,000 TPS Limit Order Book matching engine running on Gracemont E-cores.
 
 To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Invalid) cache coherence protocol across Gracemont E-core clusters, the ring buffer memory topography explicitly aligns atomic control pointers to separate 64-byte L1 cache lines:
 \begin{itemize}
@@ -465,6 +465,12 @@ If network connectivity drops or external rate limits (e.g., HTTP 429 status cod
 \end{equation}
 where $\lambda = 0.05$ represents the linear decay coefficient per tick, $t_{\text{last}}$ is the timestamp of the last valid API frame, and $t$ is the current simulation tick. This ensures that market sentiment returns smoothly to baseline levels during network outages.
 
+When remote API connectivity is restored following an outage, resuming narrative broadcasts abruptly could introduce discrete, non-physical price dislocations in the LOB. To prevent this, AMPS implements a smooth linear interpolation step over $N = 5$ ticks ($t_{\text{recovery}} \dots t_{\text{recovery}+5}$) between the decayed intensity state $I_{\text{decayed}}$ and the newly received API shock payload intensity $I_{\text{new}}$:
+\begin{equation}
+    I_{t_{\text{recovery}} + k} = I_{\text{decayed}} + \frac{k}{N} \left( I_{\text{new}} - I_{\text{decayed}} \right) \quad \text{for } k \in \{1, 2, \dots, N\}
+\end{equation}
+This interpolation bridges local mathematical decay back to LLM narrative-driven volatility, maintaining microstructural continuity across the order book.
+
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
@@ -491,10 +497,10 @@ where $\lambda = 0.05$ represents the linear decay coefficient per tick, $t_{\te
     \node[below=2pt, font=\scriptsize, align=center] at (8.0, 0) {$t_{\text{base}}$\\(Decay Complete)};
 
     % Annotation for normal operation
-    \node[above=3pt, font=\scriptsize\bfseries, color=blue!80!black] at (1.4, 3.0) {Active 70B Stream};
+    \node[above=3pt, font=\scriptsize\bfseries, color=blue!80!black] at (1.4, 3.0) {Active Dual-Provider Stream};
 
     % Callout for linear decay (slanted arrow to slope)
-    \node[draw=red!70!black, fill=red!5, rounded corners=3pt, font=\scriptsize, align=center] (decay_box) at (5.6, 3.3) {
+    \node[draw=red!70!black, fill=red!5, rounded corners=3pt, font=\scriptsize, align=center] (decay_box) at (5.6, 3.5) {
         \textbf{Linear Decay Mode} ($\lambda = 0.05$):\\[2pt]
         $\vec{S}_t = \vec{S}_{t_{\text{last}}} \cdot \max(0, 1 - \lambda \Delta t)$
     };
@@ -526,13 +532,13 @@ Table \ref{tab:network_degradation_matrix} specifies the network degradation han
 \toprule
 \textbf{Network Condition} & \textbf{Detection Trigger} & \textbf{System Action} & \textbf{Throughput Protection} \\
 \midrule
-Normal Operations & Latency $<$ 1.0s & Direct Ring Buffer Read & Full 1,000 TPS Unconstrained \\
-Jitter / Minor Delay & 1.0s $\le$ Latency $<$ 5.0s & Linear Decay ($\lambda = 0.05$) & Matching Engine Unblocked \\
-High Latency Timeout & 5.0s $\le$ Latency $<$ 10.0s & Floor Stale State Clamping & Prevents Artificial Shock Jumps \\
-HTTP 429 / Disconnect & Rate Limit / Socket Drop & NPIV Causal Instrumental Fallback & Neutralizes Sentiment ($\vec{S} \to \vec{0}$) \\
+Primary Operations & Latency $<$ 800ms (p99 SLA) & DeepSeek V3 Direct Ring Buffer Read & Full 1,000 TPS Unconstrained \\
+Secondary Failover & Timeout $>$ 2,500ms / 429 & Instant Failover to Gemini 1.5 Flash & Zero Event-Loop Starvation \\
+Autonomous Decay & Both APIs Unreachable & Linear Decay ($\lambda = 0.05$) \& 5-Tick Recovery & Matching Engine Unblocked \\
+HTTP 429 / Disconnect & Socket Drop / Throttle & NPIV Causal Instrumental Fallback & Neutralizes Sentiment ($\vec{S} \to \vec{0}$) \\
 \bottomrule
 \end{tabularx}
-\caption{Network degradation handling rules and econometric NPIV fallback policies.}
+\caption{Network degradation handling rules and econometric NPIV fallback policies under the dual-provider architecture.}
 \label{tab:network_degradation_matrix}
 \end{table}
 
@@ -762,7 +768,7 @@ Simultaneously, an automated Abstract Syntax Tree (AST) parser engine (invoked v
 
 \subsection{Consolidated Hardware Optimization Matrix}
 
-The four software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon. Table \ref{tab:hardware_optimization_matrix} summarizes the four core architectural blueprints.
+The four software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2$ $\mu$s (mean $3.8$ $\mu$s), and a Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash). Table \ref{tab:hardware_optimization_matrix} summarizes the four core architectural blueprints.
 
 \begin{table}[htbp]
 \centering
@@ -773,7 +779,7 @@ The four software optimization blueprints synthesize physical hardware resources
 \midrule
 1. Tiered KV-Cache VRAM Pinning & Medium (1--2 d) & RTX 5070 Ti VRAM \& Pinned DDR5 RAM & Reduces PCIe transfers by $>$80\%; pins 80 AMMs in VRAM ($<$500 ns latency; 12.5 ms $\to$ 1.2 ms). \\
 2. Input Discretization \& Singleflight & Low (1 d) & CUDA Cores \& uvloop Event Loop & Coalesces 400 agent queries into 5--10 passes, eliminating cache stampedes and flattening VRAM spikes. \\
-3. Asynchronous Macro Ring Buffer & Low (1 d) & POSIX /dev/shm \& Gracemont E-Cores & Isolates 1,000 TPS LOB engine from API latency jitter; enables NPIV causal econometric isolation. \\
+3. Asynchronous Macro Ring Buffer & Low (1 d) & POSIX /dev/shm \& Gracemont E-Cores & Dual-provider failover (p99 SLA $<$ 800ms, 2.5s timeout); isolates 1,000 TPS LOB engine from API jitter; enables NPIV causal econometric isolation. \\
 4. Relaxed SIRC \& SSE4.2 POPCNT & Medium (2 d) & Gracemont E-Core ALU (SSE4.2 POPCNT) & Increases zero-GPU cache hit rate from 80\% to 95\%; reduces mean query latency from 12.5 ms to 3.8 $\mu$s. \\
 \bottomrule
 \end{tabularx}

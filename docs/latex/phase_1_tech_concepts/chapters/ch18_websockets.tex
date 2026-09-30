@@ -31,8 +31,8 @@ When a user opens the AMPS dashboard in their browser, they establish a WebSocke
     arr/.style={->, thick, >=stealth}
 ]
     \node[box, fill=green!10] (engine) {Numba Engine\\(E-Cores)};
-    \node[box, fill=red!10] (redis) [right=2cm of engine] {Redis PubSub\\(Unix Socket)};
-    \node[box, fill=yellow!10] (fastapi) [right=2cm of redis] {FastAPI Server\\(E-Cores)};
+    \node[box, fill=red!10] (redis) [right=3cm of engine] {Redis PubSub\\(Unix Socket)};
+    \node[box, fill=yellow!10] (fastapi) [right=2.5cm of redis] {FastAPI Server\\(E-Cores)};
     \node[box, fill=blue!10] (browser) [below=1.5cm of fastapi] {Browser\\(TCP WebSocket)};
 
     \draw[arr] (engine) -- node[above] {Fire-and-Forget} (redis);

@@ -3,15 +3,15 @@
 
 While the matching engine computes the mathematical reality of the simulation, the behavior of the market is driven entirely by the cognitive decisions of generative Large Language Models (LLMs). This chapter details the hierarchical architecture of the Agent Swarm, dividing the computational load between a massive, omniscient Macro Orchestrator and hundreds of localized, boundedly-rational micro-agents.
 
-\section{The 70B Macro Orchestrator (The God Agent)}
+\section{The 671B Macro Orchestrator (The God Agent)}
 
-At the apex of the simulation hierarchy sits the Macro Orchestrator, often referred to as the "God Agent," drawing on generative multi-agent interaction architectures \cite{park2023generative}. Powered by a massive 70-Billion parameter language model (e.g., Llama 3 70B), this agent is entirely decoupled from the high-frequency trading loop. It operates on a slower, macro timescale (e.g., ticking every 10 seconds).
+At the apex of the simulation hierarchy sits the Macro Orchestrator, often referred to as the ``God Agent,'' drawing on generative multi-agent interaction architectures \cite{park2023generative}. Powered by the 671-Billion parameter Mixture-of-Experts (MoE) DeepSeek V3 architecture, this agent is entirely decoupled from the high-frequency trading loop. It operates on a slower, macro timescale (e.g., ticking every 10 seconds).
 
 The primary responsibility of the God Agent is the synthesis of \textbf{Exogenous Narrative Shocks}. By continuously ingesting macroeconomic data, simulated geopolitical events, and historical templates from datasets like FinQA \cite{chen2021finqa}, the God Agent constructs coherent, cascading crises. 
 
-For example, rather than simply instructing agents to "sell," the God Agent generates a detailed SEC 8-K filing indicating systemic fraud at a major financial institution. This narrative is then broadcast to the ecosystem, forcing the micro-agents to independently parse the text, evaluate their portfolio exposure, and derive the logical financial action (panic selling).
+For example, rather than simply instructing agents to ``sell,'' the God Agent generates a detailed SEC 8-K filing indicating systemic fraud at a major financial institution. This narrative is then broadcast to the ecosystem, forcing the micro-agents to independently parse the text, evaluate their portfolio exposure, and derive the logical financial action (panic selling).
 
-Because of its massive size, the 70B model requires over 40GB of VRAM/RAM for inference, making it impossible to run locally on a 16GB workstation GPU alongside the micro-agents without memory starvation. Therefore, the God Agent's inference is strictly offloaded to an external ultra-low latency API (e.g., Groq). It passes its generated output back down to the local simulation via high-speed WebSockets.
+Because of its massive size, the 671B MoE model requires infrastructure far exceeding local 16GB workstation GPU capacities. Therefore, the God Agent's inference is offloaded via a dynamic Dual-Provider API Abstraction layer, utilizing DeepSeek V3 as the primary reasoning engine and Gemini 1.5 Flash as an automated zero-friction fallback. It passes its generated output back down to the local simulation event loop via high-speed WebSockets.
 
 \section{The 400 Micro-Agents (The Swarm)}
 
@@ -47,24 +47,114 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[
-    scale=0.9, transform shape,
-    box/.style={draw, rectangle, rounded corners, minimum width=3cm, minimum height=1cm, align=center},
-    arr/.style={->, thick, >=stealth}
-]
-    \node[box, fill=blue!10] (perceive) {1. Perceive LOB \& News};
-    \node[box, fill=yellow!10] (propose) [right=1.5cm of perceive] {2. Propose Trade};
-    \node[box, fill=orange!10] (critique) [below=1cm of propose] {3. Internal Critique\\(Check PnL / Repetition)};
-    \node[box, fill=green!10] (execute) [left=1.5cm of critique] {4. Execute to LOB};
-    \node[box, fill=red!10] (halt) [right=1.5cm of critique] {Halt \& Re-evaluate};
+% Publication-ready accessible palette
+\definecolor{navyBorder}{RGB}{30, 58, 138}
+\definecolor{navyBg}{RGB}{239, 246, 255}
+\definecolor{amberBorder}{RGB}{180, 83, 9}
+\definecolor{amberBg}{RGB}{254, 243, 199}
+\definecolor{coralBorder}{RGB}{194, 65, 12}
+\definecolor{coralBg}{RGB}{255, 237, 213}
+\definecolor{emeraldBorder}{RGB}{21, 128, 61}
+\definecolor{emeraldBg}{RGB}{220, 252, 231}
+\definecolor{crimsonBorder}{RGB}{185, 28, 28}
+\definecolor{crimsonBg}{RGB}{254, 226, 226}
+\definecolor{purpleBorder}{RGB}{109, 40, 217}
+\definecolor{charcoal}{RGB}{51, 65, 85}
+\definecolor{slateBg}{RGB}{248, 250, 252}
 
-    \draw[arr] (perceive) -- (propose);
-    \draw[arr] (propose) -- (critique);
-    \draw[arr] (critique) -- node[above] {Pass} (execute);
-    \draw[arr] (critique) -- node[above] {Fail} (halt);
-    \draw[arr, dashed] (halt.north) |- (perceive.east);
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    font=\sffamily\small,
+    box/.style={
+        draw, rectangle, rounded corners=6pt, 
+        minimum width=3.8cm, minimum height=1.2cm, 
+        align=center, line width=0.9pt
+    },
+    arr/.style={
+        -{Stealth[length=5pt, width=4pt]}, 
+        line width=1pt, color=charcoal
+    },
+    lbl/.style={
+        font=\sffamily\scriptsize\bfseries, 
+        fill=white, inner sep=2.5pt, text=charcoal,
+        rounded corners=2pt
+    }
+]
+
+    % --- Row 1: Perception & Initial Proposal ---
+    \node[box, draw=navyBorder, fill=navyBg] (perceive) at (0, 0)
+        {1. Perceive State\\{\scriptsize (LOB Depth, OFI, News)}};
+
+    \node[box, draw=amberBorder, fill=amberBg] (propose) at (6.2, 0)
+        {2. Propose Trade\\{\scriptsize (1.58-bit LLM Swarm)}};
+
+    % --- Row 2: Reflexion Memory & Critique ---
+    \node[box, draw=crimsonBorder, fill=crimsonBg] (halt) at (0, -2.4)
+        {Reflexion Memory\\{\scriptsize (Buffer Mutation / Abort if $k > 3$)}};
+
+    \node[box, draw=coralBorder, fill=coralBg] (critique) at (6.2, -2.4)
+        {3. Internal Critique\\{\scriptsize (Historical PnL \& Repetition)}};
+
+    % --- Row 3: Execution ---
+    \node[box, draw=emeraldBorder, fill=emeraldBg] (execute) at (6.2, -4.8)
+        {4. Execute to LOB\\{\scriptsize (Order Flow Generation)}};
+
+    % --- Visual Boundary: GPU-Bound LLM Engine ---
+    \begin{scope}[on background layer]
+        \node[
+            draw=charcoal!35, dashed, fill=slateBg,
+            rounded corners=8pt, line width=0.8pt,
+            fit=(propose) (critique),
+            inner xsep=14pt, inner ysep=14pt,
+            label={[font=\sffamily\tiny\bfseries, text=charcoal!70, anchor=north east, yshift=-2pt, xshift=-4pt]north east:NEURAL REASONING CORE (GPU-BOUND)}
+        ] (llmcore) {};
+    \end{scope}
+
+    % --- Primary Execution & Critique Flow ---
+    \draw[arr] (perceive) -- 
+        node[lbl, align=center, above=2pt, pos=0.35] {Cache Miss\\($d_H > 12$)} 
+        (propose);
+        
+    \draw[arr] (propose) -- 
+        node[lbl, right=3pt] {Draft Order} 
+        (critique);
+        
+    \draw[arr] (critique) -- 
+        node[lbl, right=3pt, text=emeraldBorder, pos=0.7] {Pass: Rational} 
+        (execute);
+
+    % --- Fail & Reflexion Loop ---
+    \draw[arr] (critique) -- 
+        node[lbl, align=center, above=2pt, text=crimsonBorder, pos=0.45] {Fail:\\Irrational} 
+        (halt);
+        
+    \draw[arr, dashed] (halt) -- 
+        node[lbl, align=center, left=3pt] {Mutate Context\\($k \le 3$)} 
+        (perceive);
+
+    % --- Routing Channel 1: SIRC Fast-Path Bypass (Zero-GPU Execution) ---
+    \coordinate (topBus) at (0, 1.15);
+    \coordinate (rightBus) at ([xshift=1.35cm]llmcore.east);
+
+    \draw[arr, draw=purpleBorder, line width=1.1pt, dashed] 
+        (perceive.north) |- ([yshift=0.45cm]topBus -| rightBus)
+        node[lbl, text=purpleBorder, pos=0.68, above=1pt] 
+            {SIRC Cache Hit ($d_H \le 12$, 95\% Zero-GPU Bypass)}
+        -- (execute.east -| rightBus)
+        -- (execute.east);
+
+    % --- Routing Channel 2: Macro LOB Market Feedback ---
+    \coordinate (leftBus) at ([xshift=-1.35cm]halt.west);
+
+    \draw[arr, draw=emeraldBorder!85!black, line width=1.1pt] 
+        (execute.west) -- (execute.west -| leftBus)
+        -- (perceive.west -| leftBus)
+        node[lbl, text=emeraldBorder!85!black, midway, rotate=90, above=2pt, pos=0.6] 
+            {LOB State Feedback (Micro-Price \& Depth Update)}
+        -- (perceive.west);
+
 \end{tikzpicture}
-\caption{The Reflexion Loop. Agents mathematically evaluate the rationality of their own outputs against their historical PnL before executing, preventing recursive model collapse.}
+\caption{The Dual-Route Reflexion Architecture in AMPS. Routine states matching behavioral signatures ($d_H \le 12$) trigger the SIRC zero-GPU fast-path directly to execution. Novel market states require the 1.58-bit LLM swarm and internal critique, routing failed evaluations into short-term reflexion buffers before order execution alters aggregate LOB state.}
 \label{fig:reflexion_loop}
 \end{figure}
 

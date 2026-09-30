@@ -1,7 +1,7 @@
 \chapter{Algorithmic Market Making \& Adverse Selection}
 \label{ch:algorithmic_market_making}
 
-If AMPS relied entirely on generative Large Language Models (LLMs) to provide resting liquidity, the simulated market would instantly collapse. The inherent latency of LLM inference--even when heavily quantized--is fundamentally incompatible with the continuous, microsecond-level quoting obligations required to maintain a functional spread. Therefore, the simulation architecture mandates the deployment of deterministic \textbf{Algorithmic Market Makers (AMMs)}. This chapter explores the mathematical logic driving these AMMs and how their defensive behaviors act as the primary catalyst for flash crashes.
+If AMPS relied entirely on generative Large Language Models (LLMs) to provide resting liquidity, the simulated market would instantly collapse. The inherent latency of LLM inference -- even when heavily quantized -- is fundamentally incompatible with the continuous, microsecond-level quoting obligations required to maintain a functional spread. Therefore, the simulation architecture mandates the deployment of deterministic \textbf{Algorithmic Market Makers (AMMs)}. This chapter explores the mathematical logic driving these AMMs and how their defensive behaviors act as the primary catalyst for flash crashes.
 
 \section{The Function of the Market Maker}
 
@@ -24,11 +24,11 @@ While inventory control is critical for normal market equilibrium, it breaks dow
 
 \section{Adverse Selection and Toxic Flow}
 
-Adverse Selection occurs when a market maker trades against an informed counterparty. In the context of AMPS, when the Macro God Agent broadcasts a severe negative shock, the ``Whale'' agents receive this information instantly. They generate \textbf{Toxic Flow}--aggressive market sell orders driven by deterministic knowledge that the asset is overvalued \cite{glosten1985bid}.
+Adverse Selection occurs when a market maker trades against an informed counterparty. In the context of AMPS, when the Macro God Agent broadcasts a severe negative shock, the ``Whale'' agents receive this information instantly. They generate \textbf{Toxic Flow} -- aggressive market sell orders driven by deterministic knowledge that the asset is overvalued \cite{glosten1985bid}.
 
-\subsection{The Glosten--Milgrom Formulation}
+\subsection{The Glosten-Milgrom Formulation}
 
-The classic Glosten--Milgrom model \cite{glosten1985bid} provides the mathematical framework for understanding how AMMs react to toxic flow. Let $V \in \{V_{low}, V_{high}\}$ be the true fundamental value of the asset, which is known to informed traders but unknown to the AMM. The AMM only observes the order flow.
+The classic Glosten-Milgrom model \cite{glosten1985bid} provides the mathematical framework for understanding how AMMs react to toxic flow. Let $V \in \{V_{low}, V_{high}\}$ be the true fundamental value of the asset, which is known to informed traders but unknown to the AMM. The AMM only observes the order flow.
 
 When the AMM observes an overwhelming ratio of sell orders to buy orders (an extreme Order Flow Imbalance, or OFI), its internal probability estimation that $V = V_{low}$ approaches $1.0$.
 
@@ -64,6 +64,6 @@ where $\sigma_V$ represents the volatility of the asset's true value. As $\mu \t
 
 Because algorithms will perfectly execute Equation 3.1, a severe panic will cause the AMMs to instantly cancel all resting bids, creating a \textit{Liquidity Void}. If a generative retail agent submits a market sell order into a liquidity void, the order will execute at a price of $\$0.00$, destroying the market simulation.
 
-To prevent this, traditional finance (TradFi) exchanges implement regulatory \textbf{Circuit Breakers}, such as the Limit Up--Limit Down (LULD) mechanism \cite{sec2012luld}. LULD explicitly pauses trading for 5 minutes if the price of an asset moves beyond a specified percentage band (e.g., 5\% or 10\%) within a rolling 5-minute window. 
+To prevent this, traditional finance (TradFi) exchanges implement regulatory \textbf{Circuit Breakers}, such as the Limit Up -- Limit Down (LULD) mechanism \cite{sec2012luld}. LULD explicitly pauses trading for 5 minutes if the price of an asset moves beyond a specified percentage band (e.g., 5\% or 10\%) within a rolling 5-minute window. 
 
 The inclusion of LULD dynamics is what strictly separates AMPS from unregulated cryptocurrency simulations, forcing the generative agents to comprehend regulatory halts and the physics of unexecutable panic.

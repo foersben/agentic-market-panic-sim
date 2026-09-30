@@ -1,7 +1,7 @@
 \chapter{Zero-Copy Inter-Process Communication}
 \label{ch:zero_copy_ipc}
 
-The AMPS engine is logically fractured: Python's \texttt{asyncio} event loop orchestrates the 400 generative agents on one set of CPU cores, while the Numba JIT engine computes the Limit Order Book on another. To bridge these two distinct environments, the simulation requires high-throughput Inter-Process Communication (IPC). Traditional IPC mechanisms--such as WebSockets, gRPC, or Redis--introduce serialization and deserialization overhead that violates our microsecond latency budgets. This chapter details the implementation of true zero-copy IPC using shared memory and Apache Arrow.
+The AMPS engine is logically fractured: Python's \texttt{asyncio} event loop orchestrates the 400 generative agents on one set of CPU cores, while the Numba JIT engine computes the Limit Order Book on another. To bridge these two distinct environments, the simulation requires high-throughput Inter-Process Communication (IPC). Traditional IPC mechanisms -- such as WebSockets, gRPC, or Redis -- introduce serialization and deserialization overhead that violates our microsecond latency budgets. This chapter details the implementation of true zero-copy IPC using shared memory and Apache Arrow.
 
 \section{The Overhead of Serialization}
 
@@ -24,9 +24,9 @@ By defining a contiguous memory layout using a \texttt{NumPy dtype}, we achieve 
 ]
     \node[mem, fill=blue!10] (agent) {Agent Process\\(Python \texttt{asyncio})};
     
-    \node[mem, fill=yellow!20, minimum width=4cm] (shm) [right=2cm of agent] {\texttt{/dev/shm}\\(Physical RAM Block)};
+    \node[mem, fill=yellow!20, minimum width=4cm] (shm) [right=3cm of agent] {\texttt{/dev/shm}\\(Physical RAM Block)};
     
-    \node[mem, fill=green!10] (engine) [right=2cm of shm] {Matching Engine\\(Numba LLVM)};
+    \node[mem, fill=green!10] (engine) [right=3cm of shm] {Matching Engine\\(Numba LLVM)};
     
     \draw[arr] (agent.east) -- node[above] {Writes} node[below] {(No Pickle)} (shm.west);
     \draw[arr] (shm.east) -- node[above] {Reads} node[below] {(Direct Pointers)} (engine.west);

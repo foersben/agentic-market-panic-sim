@@ -16,73 +16,73 @@ The difference between the Best Ask and the Best Bid is the \textbf{Spread} ($S 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-    header/.style={rectangle, draw=black!70, fill=gray!15, rounded corners=3pt, text width=11.6cm, minimum height=0.62cm, font=\footnotesize, align=center},
+    header/.style={rectangle, draw=black!70, fill=gray!15, rounded corners=3pt, text width=13.5cm, minimum height=0.62cm, font=\footnotesize, align=center},
     colhead/.style={rectangle, draw=black!45, fill=gray!10, rounded corners=2pt, text width=#1, minimum height=0.50cm, font=\bfseries\scriptsize, align=center},
     cell/.style={rectangle, draw=black!30, rounded corners=2pt, text width=#1, minimum height=0.50cm, font=\scriptsize, align=center},
-    askcell/.style={cell=1.7cm, draw=red!60!black, fill=red!10, text=red!80!black, font=\bfseries\scriptsize},
-    bidcell/.style={cell=1.7cm, draw=green!60!black, fill=green!10, text=green!70!black, font=\bfseries\scriptsize},
-    barcell/.style={cell=5.2cm, fill=gray!3, draw=black!25},
-    volbar_ask/.style={rectangle, draw=red!70!black, fill=red!22, rounded corners=2pt, minimum height=0.40cm, anchor=west, font=\scriptsize\bfseries, text=red!90!black, align=center},
-    volbar_bid/.style={rectangle, draw=green!70!black, fill=green!22, rounded corners=2pt, minimum height=0.40cm, anchor=west, font=\scriptsize\bfseries, text=green!80!black, align=center},
-    spreadbox/.style={rectangle, draw=blue!75!black, fill=blue!6, rounded corners=3pt, text width=11.6cm, minimum height=0.64cm, align=center}
+    askcell/.style={cell=1.4cm, draw=red!60!black, fill=red!10, text=red!80!black, font=\bfseries\scriptsize},
+    bidcell/.style={cell=1.4cm, draw=green!60!black, fill=green!10, text=green!70!black, font=\bfseries\scriptsize},
+    barcell/.style={cell=5.2cm, fill=gray!3, draw=black!25, align=left},
+    volbar_ask/.style={rectangle, draw=red!70!black, fill=red!22, rounded corners=2pt, minimum height=0.40cm, anchor=west, font=\scriptsize\bfseries, text=red!90!black, align=left},
+    volbar_bid/.style={rectangle, draw=green!70!black, fill=green!22, rounded corners=2pt, minimum height=0.40cm, anchor=west, font=\scriptsize\bfseries, text=green!80!black, align=left},
+    spreadbox/.style={rectangle, draw=blue!75!black, fill=blue!6, rounded corners=3pt, text width=12.0cm, minimum height=0.64cm, align=center}
 ]
     % Main Table Header (span: [-5.95, +5.85], width=11.8cm)
     \node[header] (title) at (-0.05, 0) {\textbf{Level 2 (L2) Limit Order Book State Matrix} ($\mathbf{L}_t \in \mathbb{R}^{2d \times 2}$) \quad $\cdot$ \quad \textbf{FIFO Price--Time Priority}};
 
     % Column Headers (y = -0.90)
-    \node[colhead=2.2cm] at (-4.75, -0.90) {Depth Level};
-    \node[colhead=1.7cm] at (-2.65, -0.90) {Price ($P$)};
-    \node[colhead=1.9cm] at (-0.70, -0.90) {Quantity ($v$)};
-    \node[colhead=5.2cm] at (3.15, -0.90) {Cumulative Depth / Liquidity ($L$)};
+    \node[colhead=2.0cm] at (-4.75, -0.90) {Depth Level};
+    \node[colhead=1.4cm] at (-2.65, -0.90) {Price ($P$)};
+    \node[colhead=1.9cm] at (-0.60, -0.90) {Quantity ($v$)};
+    \node[colhead=5.2cm] at (3.35, -0.90) {Cumulative Depth / Liquidity ($L$)};
 
     % -- ASK SIDE (SELLERS / OFFERS) --
     % Level 3 Ask
-    \node[cell=2.2cm] at (-4.75, -1.60) {Level 3 (Ask)};
+    \node[cell=2.0cm] at (-4.75, -1.60) {Level 3 (Ask)};
     \node[askcell] at (-2.65, -1.60) {\$100.03};
-    \node[cell=1.9cm] at (-0.70, -1.60) {1,200 shares};
-    \node[barcell] at (3.15, -1.60) {};
+    \node[cell=1.9cm] at (-0.60, -1.60) {1,200 shares};
+    \node[barcell] at (3.35, -1.60) {};
     \node[volbar_ask, minimum width=4.5cm] at (0.60, -1.60) {$L_3 = 2,000$ shares};
 
     % Level 2 Ask
-    \node[cell=2.2cm] at (-4.75, -2.25) {Level 2 (Ask)};
+    \node[cell=2.0cm] at (-4.75, -2.25) {Level 2 (Ask)};
     \node[askcell] at (-2.65, -2.25) {\$100.02};
-    \node[cell=1.9cm] at (-0.70, -2.25) {500 shares};
-    \node[barcell] at (3.15, -2.25) {};
+    \node[cell=1.9cm] at (-0.60, -2.25) {500 shares};
+    \node[barcell] at (3.35, -2.25) {};
     \node[volbar_ask, minimum width=2.6cm] at (0.60, -2.25) {$L_2 = 800$ shares};
 
     % Level 1 Ask (Best Ask)
-    \node[cell=2.2cm, fill=red!6, draw=red!60!black] at (-4.75, -2.90) {\textbf{Level 1 (Best)}};
+    \node[cell=2.0cm, fill=red!6, draw=red!60!black] at (-4.75, -2.90) {Level 1 (Best)};
     \node[askcell, fill=red!22, line width=0.8pt] at (-2.65, -2.90) {\$100.01};
-    \node[cell=1.9cm, fill=red!6] at (-0.70, -2.90) {300 shares};
-    \node[barcell, fill=red!3] at (3.15, -2.90) {};
+    \node[cell=1.9cm, fill=red!6] at (-0.60, -2.90) {300 shares};
+    \node[barcell, fill=red!3] at (3.35, -2.90) {};
     \node[volbar_ask, minimum width=1.5cm, fill=red!30] at (0.60, -2.90) {$L_1 = 300$};
 
     % -- INSIDE SPREAD & MID-PRICE CHANNEL (y = -4.00) --
     \node[spreadbox] (spread) at (-0.05, -4.00) {
-        \textbf{\footnotesize Inside Spread: $S = \$0.02$ (2 Ticks)} \qquad $\vert$ \qquad \textbf{\footnotesize Mid-Price: $P_{\text{mid}} = \$100.00$}\\[2pt]
-        \scriptsize $\leftarrow$ Buy Matches Ask (\$100.01) \qquad $\vert$ \qquad Sell Matches Bid (\$99.99) $\rightarrow$
+        \textbf{\footnotesize Inside Spread: $S = \$0.02$ (2 Ticks)} \quad $\vert$ \quad \textbf{\footnotesize Mid-Price: $P_{\text{mid}} = \$100.00$}\\[2pt]
+        \scriptsize $\leftarrow$ Buy Matches Ask (\$100.01) \qquad\qquad\qquad $\vert$ \qquad Sell Matches Bid (\$99.99) $\rightarrow$
     };
 
     % -- BID SIDE (BUYERS / BIDS) --
     % Level 1 Bid (Best Bid)
-    \node[cell=2.2cm, fill=green!6, draw=green!60!black] at (-4.75, -5.10) {\textbf{Level 1 (Best)}};
+    \node[cell=2.0cm, fill=green!6, draw=green!60!black] at (-4.75, -5.10) {Level 1 (Best)};
     \node[bidcell, fill=green!22, line width=0.8pt] at (-2.65, -5.10) {\$99.99};
-    \node[cell=1.9cm, fill=green!6] at (-0.70, -5.10) {800 shares};
-    \node[barcell, fill=green!3] at (3.15, -5.10) {};
+    \node[cell=1.9cm, fill=green!6] at (-0.60, -5.10) {800 shares};
+    \node[barcell, fill=green!3] at (3.35, -5.10) {};
     \node[volbar_bid, minimum width=2.6cm, fill=green!30] at (0.60, -5.10) {$L_1 = 800$ shares};
 
     % Level 2 Bid
-    \node[cell=2.2cm] at (-4.75, -5.75) {Level 2 (Bid)};
+    \node[cell=2.0cm] at (-4.75, -5.75) {Level 2 (Bid)};
     \node[bidcell] at (-2.65, -5.75) {\$99.98};
-    \node[cell=1.9cm] at (-0.70, -5.75) {250 shares};
-    \node[barcell] at (3.15, -5.75) {};
+    \node[cell=1.9cm] at (-0.60, -5.75) {250 shares};
+    \node[barcell] at (3.35, -5.75) {};
     \node[volbar_bid, minimum width=3.2cm] at (0.60, -5.75) {$L_2 = 1,050$ shares};
 
     % Level 3 Bid
-    \node[cell=2.2cm] at (-4.75, -6.40) {Level 3 (Bid)};
+    \node[cell=2.0cm] at (-4.75, -6.40) {Level 3 (Bid)};
     \node[bidcell] at (-2.65, -6.40) {\$99.97};
-    \node[cell=1.9cm] at (-0.70, -6.40) {1,500 shares};
-    \node[barcell] at (3.15, -6.40) {};
+    \node[cell=1.9cm] at (-0.60, -6.40) {1,500 shares};
+    \node[barcell] at (3.35, -6.40) {};
     \node[volbar_bid, minimum width=4.7cm] at (0.60, -6.40) {$L_3 = 2,550$ shares};
 
 \end{tikzpicture}
@@ -98,7 +98,7 @@ Market participants interact with the LOB through distinct order types, which fu
 A Limit Order specifies a price $p$ and a volume $v$. If the order cannot be immediately matched against the opposing side, it rests in the LOB. These resting orders provide the ``depth'' of the market. Participants who submit limit orders are compensated with the ability to trade at their specified price, but they bear \textbf{Execution Risk}--the risk that the market moves away and their order never fills.
 
 \subsection{Market Orders (Liquidity Consumption)}
-A Market Order specifies a volume $v$ but no price. It demands immediate execution and will aggressively match against the resting limit orders on the opposing side, starting at Level 1 and walking down the book (consuming depth) until the volume $v$ is entirely fulfilled. Market orders guarantee execution but suffer from \textbf{Slippage}--the degradation of average execution price as deeper levels of the book are consumed.
+A Market Order specifies a volume $v$ but no price. It demands immediate execution and will aggressively match against the resting limit orders on the opposing side, starting at Level 1 and walking down the book (consuming depth) until the volume $v$ is entirely fulfilled. Market orders guarantee execution but suffer from \textbf{Slippage} -- the degradation of average execution price as deeper levels of the book are consumed.
 
 \subsection{Cancellation and Modification}
 High-Frequency Trading (HFT) environments are characterized by massive cancellation rates (often exceeding 95\%). Algorithms continuously submit and cancel limit orders to probe for hidden liquidity or adjust to microsecond changes in momentum. The AMPS engine must support $O(1)$ cancellation latency to prevent simulation lockups.

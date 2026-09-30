@@ -1,0 +1,45 @@
+# AMPS Engine Configuration - Macro Orchestrator Dual-Provider Topology
+macro_orchestrator:
+  orchestrator_name: "GodAgent_v3"
+  tick_interval_seconds: 10
+
+  # Dynamic Provider Routing Configuration
+  provider_routing:
+    active_primary: "deepseek"
+    active_secondary: "gemini"
+    auto_failover_enabled: true
+    timeout_threshold_ms: 2500  # Hard timeout triggering secondary failover
+    max_retries_before_failover: 1
+
+  # Production Circuit Breaker & Resilience Rules
+  circuit_breaker:
+    failure_threshold_count: 3
+    recovery_time_seconds: 30
+    http_status_codes_trigger: [429, 500, 502, 503, 504]
+    exponential_backoff:
+      initial_delay_ms: 200
+      max_delay_ms: 2000
+      backoff_factor: 2.0
+
+  # Model Specific Parameter Definitions
+  providers:
+    deepseek:
+      model_id: "deepseek-chat" # DeepSeek V3 671B MoE Architecture
+      api_key_env_var: "DEEPSEEK_API_KEY"
+      base_url: "https://api.deepseek.com/v1"
+      temperature: 0.7
+      max_tokens: 1024
+      prompt_caching:
+        enabled: true
+        cache_system_prompt: true
+        ttl_seconds: 3600
+
+    gemini:
+      model_id: "gemini-1.5-flash"
+      api_key_env_var: "GEMINI_API_KEY"
+      base_url: "https://generativelanguage.googleapis.com/v1beta"
+      temperature: 0.6
+      max_tokens: 1024
+      prompt_caching:
+        enabled: true
+        cache_system_prompt: true

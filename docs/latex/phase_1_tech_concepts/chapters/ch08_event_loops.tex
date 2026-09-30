@@ -21,7 +21,7 @@ While the default Python \texttt{asyncio} event loop is a massive improvement ov
 
 Even with \texttt{uvloop}, AMPS faces a critical systems engineering crisis during a simulated market panic. 
 
-When the 70B Macro God Agent broadcasts a severe, systemic market shock (e.g., ``Major Bank Files for Bankruptcy''), all 400 micro-agents wake up simultaneously. They all instantly attempt to query the local RTX 5070 Ti GPU for generative inference to decide whether to panic sell. This instantaneous, massive spike in I/O demand is known as a \textbf{Cache Stampede} or a "Thundering Herd."
+When the 671B MoE Macro God Agent broadcasts a severe, systemic market shock (e.g., ``Major Bank Files for Bankruptcy''), all 400 micro-agents wake up simultaneously. They all instantly attempt to query the local RTX 5070 Ti GPU for generative inference to decide whether to panic sell. This instantaneous, massive spike in I/O demand is known as a \textbf{Cache Stampede} or a "Thundering Herd."
 
 Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16GB of VRAM and crash the CUDA kernels. To mitigate this fatal bottleneck, AMPS implements the \textbf{Singleflight} request coalescing pattern \cite{colakel2026singleflight}.
 
@@ -41,13 +41,13 @@ Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16G
     \node[lock] (mutex) [right=1.5cm of a2] {Singleflight\\Mutex Map};
     \node[gpu] (gpu) [right=1.5cm of mutex] {RTX 5070 Ti\\(Inference)};
     
-    \draw[->, thick, >=stealth] (a1) -- node[above, scale=0.8] {1st Caller} (mutex);
+    \draw[->, thick, >=stealth] (a1) -- node[above=5pt, scale=0.8] {1st Caller} (mutex);
     \draw[->, dashed] (a2) -- node[below, scale=0.8] {Waits} (mutex);
-    \draw[->, dashed] (a3) -- node[below, scale=0.8] {Waits} (mutex);
+    \draw[->, dashed] (a3) -- node[below=4pt, scale=0.8] {Waits} (mutex);
     
     \draw[->, thick, >=stealth] (mutex) -- node[above, scale=0.8] {Compute} (gpu);
     
-    \draw[->, thick, >=stealth, blue] (gpu.south) to[bend left=30] node[below, scale=0.8] {$O(1)$ Broadcast Promise} (a3.south east);
+    \draw[->, thick, >=stealth, blue] (gpu.south) to[bend left=30] node[below=1.5pt, scale=0.8,pos=0.55] {$O(1)$ Broadcast Promise} (a3.south east);
 \end{tikzpicture}
 \caption{Mechanics of Singleflight coalescing. The first agent locks the operation and executes it. All subsequent agents yield their context and await the broadcast result, completely flattening GPU utilization spikes.}
 \label{fig:singleflight_detail}
