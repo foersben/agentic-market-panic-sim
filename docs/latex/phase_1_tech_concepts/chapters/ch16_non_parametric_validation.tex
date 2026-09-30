@@ -15,7 +15,7 @@ During systemic liquidity panic, asset returns are fundamentally non-Gaussian; t
 
 A profound empirical challenge in market microstructure is \textbf{Endogeneity}. When an algorithmic market maker widens its bid-ask spread, does it do so because the order flow has become toxic, or did the spread widening itself induce toxic momentum selling? This bidirectional feedback loop makes it impossible to directly estimate structural policy decision functions using classical ordinary least squares (OLS) regression.
 
-To resolve this endogeneity under model misspecification, AMPS implements \textbf{Non-Parametric Instrumental Variables (NPIV)} estimation \cite{mingdu2024npiv}. 
+To resolve this endogeneity under model misspecification, AMPS implements \textbf{Non-Parametric Instrumental Variables (NPIV)} estimation, drawing on the foundational conditional moment restriction framework of Newey and Powell \cite{newey2003instrumental} and its modern reproducing kernel Hilbert space (RKHS) formulation by Singh, Sahani, and Gretton \cite{singh2019kernel}. 
 
 \subsection{Structural Equation and Exclusion Restriction}
 
@@ -37,9 +37,9 @@ To identify $h_0$, we introduce an exogenous instrumental variable $Z_t$. In AMP
 
 \subsection{Spectral Regularization for Ill-Posed Inverses}
 
-Estimating $h_0$ via conditional moment equations $\mathbb{E}[Y_t - h_0(X_t) | Z_t] = 0$ is an ill-posed inverse problem. The conditional expectation operator $T: L^2(F_X) \to L^2(F_Z)$ is a compact Hilbert-Schmidt operator whose inverse is discontinuous. 
+Estimating $h_0$ via conditional moment equations $\mathbb{E}[Y_t - h_0(X_t) | Z_t] = 0$ is an ill-posed inverse problem \cite{newey2003instrumental}. The conditional expectation operator $T: L^2(F_X) \to L^2(F_Z)$ is a compact Hilbert-Schmidt operator whose inverse is discontinuous. 
 
-AMPS applies Tikhonov spectral regularization directly within its Numba JIT estimation pipeline:
+AMPS applies Tikhonov spectral regularization directly within its Numba JIT estimation pipeline, building on kernel instrumental regression methods proven to achieve minimax optimal convergence rates under ill-posed inverse operators \cite{singh2019kernel, meunier2024minimax}:
 
 \begin{equation}
     \hat{h}_\alpha = \arg\min_{h \in \mathcal{H}} \left\{ \frac{1}{N} \sum_{i=1}^N \left( \hat{\mathbb{E}}[Y | Z = z_i] - \hat{T}h(z_i) \right)^2 + \alpha_N \|h\|_{\mathcal{H}}^2 \right\}
@@ -49,11 +49,11 @@ where $\alpha_N > 0$ is a decaying regularization parameter. This spectral dampe
 
 \section{Kernel Ridge Regression (KRR) with Diagonal Adaptive Kernels}
 
-To track non-stationary regime shifts across multi-patch stress scenarios without imposing rigid distribution assumptions, AMPS utilizes \textbf{Kernel Ridge Regression (KRR) with Diagonal Adaptive Kernels} \cite{li2025diagonal}.
+To track non-stationary regime shifts across multi-patch stress scenarios without imposing rigid distribution assumptions, AMPS utilizes \textbf{Kernel Ridge Regression (KRR) with Diagonal Adaptive Feature Kernels}, rooted in the classical RKHS regularization principles of Sch{\"o}lkopf and Smola \cite{scholkopf2002learning} and vector-valued operator weighting formalized by Micchelli and Pontil \cite{micchelli2005learning} (with adaptive diagonal metric models analyzed in Li and Lin \cite{li2025diagonal}).
 
-Classical KRR projects input states $x \in \mathcal{X}$ into a reproducing kernel Hilbert space (RKHS) $\mathcal{H}_K$ via an isotropic kernel $K(x, x') = \exp(-\|x - x'\|^2 / 2\sigma^2)$. However, during liquidity cascades, feature sensitivities diverge rapidly: Order Flow Imbalance (OFI) sensitivities may expand by orders of magnitude while historical moving average signals become uninformative.
+Classical KRR projects input states $x \in \mathcal{X}$ into a reproducing kernel Hilbert space $\mathcal{H}_K$ via an isotropic kernel $K(x, x') = \exp(-\|x - x'\|^2 / 2\sigma^2)$ \cite{scholkopf2002learning}. However, during liquidity cascades, feature sensitivities diverge rapidly: Order Flow Imbalance (OFI) sensitivities may expand by orders of magnitude while historical moving average signals become uninformative.
 
-The Diagonal Adaptive Kernel model resolves this by parameterizing an anisotropic diagonal metric tensor $W = \text{diag}(w_1, w_2, \dots, w_d)$:
+The Diagonal Adaptive Kernel model resolves this by parameterizing an anisotropic diagonal metric tensor $W = \text{diag}(w_1, w_2, \dots, w_d)$ \cite{micchelli2005learning, li2025diagonal}:
 
 \begin{equation}
     K_W(x, x') = \exp\left( -\frac{1}{2} (x - x')^T W (x - x') \right) = \exp\left( -\frac{1}{2} \sum_{j=1}^d w_j (x_j - x'_j)^2 \right)

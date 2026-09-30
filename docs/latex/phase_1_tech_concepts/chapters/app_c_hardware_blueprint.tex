@@ -58,7 +58,7 @@ To bypass serialization bottlenecks during cross-process LOB state transfers, AM
 
 \subsection{P/E-Core NUMA Pinning \& Thread Isolation Topology}
 
-The default Linux Completely Fair Scheduler (CFS) is designed to optimize general-purpose multitasking by dynamically rebalancing software threads across all available CPU cores. In a heterogeneous microarchitecture such as the Intel Core i7-14700K -- which integrates high-throughput Raptor Cove Performance Cores (P-Cores) with dense Gracemont Efficiency Cores (E-Cores) -- dynamic thread migration introduces severe execution hazards. When the Linux CFS migrates a high-frequency financial matching loop from a P-Core to an E-Core, or vice versa, the execution context and local L2 cache lines are invalidated. This migration latency causes unpredictable execution spikes that destroy the microsecond-level determinism required by the LOB engine.
+The default Linux Completely Fair Scheduler (CFS) is designed to optimize general-purpose multitasking by dynamically rebalancing software threads across all available CPU cores. In a heterogeneous microarchitecture such as the Intel Core i7-14700K -- which integrates high-throughput Raptor Cove Performance Cores (P-Cores) with dense Gracemont Efficiency Cores (E-Cores) \cite{intel2024optimization} -- dynamic thread migration introduces severe execution hazards. When the Linux CFS migrates a high-frequency financial matching loop from a P-Core to an E-Core, or vice versa, the execution context and local L2 cache lines are invalidated. This migration latency causes unpredictable execution spikes that destroy the microsecond-level determinism required by the LOB engine.
 
 \begin{figure}[htbp]
 \centering
@@ -106,7 +106,7 @@ The default Linux Completely Fair Scheduler (CFS) is designed to optimize genera
 
 To eliminate thread migration penalties, AMPS enforces rigid Non-Uniform Memory Access (NUMA)-style core pinning at runtime. Cores 0 through 15 (comprising 8 Raptor Cove P-Cores with Hyper-Threading) are dedicated exclusively to heavy vector matrix operations and micro-agent inference tasks. Cores 16 through 27 (comprising 12 Gracemont E-Cores) are isolated strictly for running the uvloop asynchronous event loop, the Numba Just-In-Time (JIT) compiled LOB matching engine, and zero-copy event routing.
 
-This topology leverages the microarchitectural structure of the Gracemont cluster. The 12 E-Cores share a dedicated 4MB L2 cache per 4-core block. By binding the contiguous NumPy arrays representing the LOB matching engine directly to Cores 16--27, the matching state remains entirely bounded within the Gracemont cluster's 4MB L2 cache. The financial engine never needs to fetch state from the shared L3 cache or host DDR5 RAM during matching loops, shielding high-frequency order processing from the massive memory traversals executed by the micro-agents on Cores 0--15.
+This topology leverages the microarchitectural structure of the Gracemont cluster \cite{intel2024optimization}. The 12 E-Cores share a dedicated 4MB L2 cache per 4-core block. By binding the contiguous NumPy arrays representing the LOB matching engine directly to Cores 16--27, the matching state remains entirely bounded within the Gracemont cluster's 4MB L2 cache. The financial engine never needs to fetch state from the shared L3 cache or host DDR5 RAM during matching loops, shielding high-frequency order processing from the massive memory traversals executed by the micro-agents on Cores 0--15.
 
 Execution boundaries are enforced at system initialization using modern cgroup v2 interfaces via sysfs:
 
@@ -438,7 +438,7 @@ The 671B MoE Macro Orchestrator (God Agent) operates on a slower macro timescale
 
 The client dispatches primary requests to DeepSeek V3 (\texttt{deepseek-chat}). If an API timeout exceeding 2,500ms or an HTTP 429/5xx status code is encountered, the client triggers an immediate automated fallback to Gemini 1.5 Flash (\texttt{gemini-1.5-flash}). Concurrently, a non-blocking background worker initiates periodic health-check probes against DeepSeek V3 until normal connectivity is restored. This dual-provider topology maintains a p99 nominal latency SLA of $< 800$ms, ensuring uninterrupted streaming into the POSIX shared memory (\texttt{/dev/shm}) ring buffer and preventing event-loop starvation across the 1,000 TPS Limit Order Book matching engine running on Gracemont E-cores.
 
-To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Invalid) cache coherence protocol across Gracemont E-core clusters, the ring buffer memory topography explicitly aligns atomic control pointers to separate 64-byte L1 cache lines:
+To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Invalid) cache coherence protocol across Gracemont E-core clusters \cite{drepper2007memory}, the ring buffer memory topography incorporates the mechanical sympathy and cache-line padding principles of the LMAX Disruptor \cite{thompson2011disruptor}, explicitly aligning atomic control pointers to separate 64-byte L1 cache lines:
 \begin{itemize}
     \item \textbf{Head Pointer (\texttt{head\_ptr}):} Byte offset 0..7 (8 bytes) + 56 bytes padding = 64 bytes total (Resides exclusively on Cache Line 0).
     \item \textbf{Tail Pointer (\texttt{tail\_ptr}):} Byte offset 64..71 (8 bytes) + 56 bytes padding = 64 bytes total (Resides exclusively on Cache Line 1).
@@ -623,7 +623,7 @@ To accelerate vector matching, 1-Bit Binary Quantization (BQ) converts the trunc
 
 Calculating the distance between two 128-bit binary signatures requires an Exclusive-OR (XOR) operation followed by a bitwise population count (popcount), determining the Hamming Distance between vectors.
 
-While AVX-512 vector instructions can compute 512-bit population counts in a single clock cycle, AVX-512 cannot be executed on the Intel Core i7-14700K. Because Gracemont E-Cores lack physical AVX-512 hardware execution units, Intel physically fused off AVX-512 support across the entire processor die to ensure instruction-set compatibility across cores. Attempting to call AVX-512 instructions (such as default FAISS library configurations) triggers an unhandled Illegal Instruction hardware fault.
+While AVX-512 vector instructions can compute 512-bit population counts in a single clock cycle, AVX-512 cannot be executed on the Intel Core i7-14700K. Because Gracemont E-Cores lack physical AVX-512 hardware execution units, Intel physically fused off AVX-512 support across the entire processor die to ensure instruction-set compatibility across cores \cite{intel2024optimization}. Attempting to call AVX-512 instructions (such as default FAISS library configurations) triggers an unhandled Illegal Instruction hardware fault.
 
 To achieve microsecond vector matching without AVX-512, AMPS utilizes the SSE4.2 instruction set extension, specifically the hardware-accelerated \texttt{POPCNT} intrinsic. The SSE4.2 \texttt{POPCNT} instruction executes in 1 clock cycle per 64-bit register, in sharp contrast to the 15--20 clock cycles required for an unaligned floating-point (FP32) dot product.
 

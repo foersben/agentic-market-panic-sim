@@ -24,7 +24,7 @@ Even with \texttt{uvloop}, AMPS faces a critical systems engineering crisis duri
 
 When the 671B MoE Macro God Agent broadcasts a severe, systemic market shock (e.g., ``Major Bank Files for Bankruptcy''), all 400 micro-agents wake up simultaneously. They all instantly attempt to query the local RTX 5070 Ti GPU for generative inference to decide whether to panic sell. This instantaneous, massive spike in I/O demand is known as a \textbf{Cache Stampede} or a "Thundering Herd."
 
-Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16GB of VRAM and crash the CUDA kernels. To mitigate this fatal bottleneck, AMPS implements the \textbf{Singleflight} request coalescing pattern \cite{colakel2026singleflight}.
+Sending 400 identical LLM prompts to the GPU simultaneously will exhaust the 16GB of VRAM and crash the CUDA kernels. To mitigate this fatal bottleneck, AMPS implements the \textbf{Singleflight} request coalescing pattern \cite{fitzpatrick2018singleflight}, grounded in formal cache stampede prevention models \cite{vattani2015cache}.
 
 \begin{figure}[htbp]
 \centering

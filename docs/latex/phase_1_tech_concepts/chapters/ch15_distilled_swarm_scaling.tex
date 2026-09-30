@@ -98,7 +98,7 @@ Executing batched student policy passes at sub-0.2 microsecond latency requires 
 
 \subsection{Cluster-to-Archetype Pinning \& Active State Prefetching}
 
-The 12 Gracemont Efficiency Cores of the i7-14700K are physically partitioned into \textbf{three 4-core clusters}, with each cluster sharing a dedicated \textbf{4MB Level 2 (L2) cache} (totaling 12MB L2 across all E-cores) \cite{intel2026gracemont}.
+The 12 Gracemont Efficiency Cores of the i7-14700K are physically partitioned into \textbf{three 4-core clusters}, with each cluster sharing a dedicated \textbf{4MB Level 2 (L2) cache} (totaling 12MB L2 across all E-cores) \cite{intel2024optimization}.
 
 With student policy archetypes quantized to INT8 ($\approx 20\text{ KB}$ per archetype, $\approx 80\text{ KB}$ total across Market Makers, Institutional Whales, Momentum Scalpers, and Noise Traders), static weights consume less than $2\%$ of each cluster's 4MB L2 boundary. The three clusters are assigned static archetype affinities via Linux \texttt{sched\_setaffinity}:
 

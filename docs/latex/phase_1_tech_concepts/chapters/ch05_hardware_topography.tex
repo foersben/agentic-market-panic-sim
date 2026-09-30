@@ -13,7 +13,7 @@ Modern Intel processors, beginning with the ``Alder Lake'' architecture and cont
     \item \textbf{E-Cores (Gracemont):} 12 smaller, power-efficient cores designed for dense, highly threaded background tasks. They share a smaller L2 cache (4MB per 4-core cluster) and execute fewer instructions per clock (IPC), but provide massive aggregate throughput for parallel workloads.
 \end{itemize}
 
-Crucially, to maintain instruction set parity across these asymmetric cores, Intel physically fused off AVX-512 vector support on the Raptor Lake silicon die \cite{intel2026gracemont}. Attempting to issue 512-bit vector instructions triggers immediate hardware exceptions, mandating a strict architectural reliance on SSE4.2 and scalar bit manipulation intrinsics across the simulation loop.
+Crucially, to maintain instruction set parity across these asymmetric cores, Intel physically fused off AVX-512 vector support on the Raptor Lake silicon die \cite{intel2024optimization}. Attempting to issue 512-bit vector instructions triggers immediate hardware exceptions, mandating a strict architectural reliance on SSE4.2 and scalar bit manipulation intrinsics across the simulation loop.
 
 \subsection{The Danger of Thread Migration}
 
