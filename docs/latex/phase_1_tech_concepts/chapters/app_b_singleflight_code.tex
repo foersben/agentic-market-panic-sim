@@ -7,6 +7,8 @@ This appendix provides the reference Python implementation for the Singleflight 
 
 The implementation relies on an \texttt{asyncio.Lock} to guarantee thread-safe mutations to an in-memory dictionary of active promises (\texttt{asyncio.Future}).
 
+\vspace{\baselineskip}
+
 \captionof{listing}{Reference Implementation of Singleflight Request Coalescing in Python.}
 \label{listing:singleflight_python}
 \begin{minted}{python}
@@ -70,6 +72,7 @@ class Singleflight:
             result = await future
             return result, False, 0
 \end{minted}
+\par\vspace*{\baselineskip}
 
 \section{Execution Metrics and GPU VRAM Preservation}
 

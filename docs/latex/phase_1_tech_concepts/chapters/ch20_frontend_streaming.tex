@@ -1,9 +1,9 @@
-\chapter{Front-End UI Architecture \& Zero-Latency WebSocket Streaming}
+\chapter{Front-End UI Architecture: Apache Arrow IPC Streaming \& Wasm-Accelerated Analytics via FINOS Perspective}
 \label{ch:frontend_streaming}
 
 A high-performance financial simulation engine capable of processing 1,000,000 agents at over 100,000 Ticks Per Second requires an observation pipeline capable of rendering high-frequency microstructural chaos in real time without introducing backpressure into the matching engine. Traditional Single Page Applications (SPAs) built on React or Vue introduce massive client-side state reconciliation overhead, which collapses when bombarded with thousands of state updates per second. 
 
-This chapter outlines the unified AMPS front-end and telemetry streaming architecture: combining server-side draft state management, binary WebSockets, WebGL hardware-accelerated canvas rendering, and Redis PubSub process decoupling.
+This chapter outlines the unified AMPS front-end and telemetry streaming architecture: combining server-side draft state management, Apache Arrow IPC streaming over WebSockets, WebAssembly-accelerated real-time analytics via FINOS Perspective \cite{finos_perspective}, and Redis PubSub process decoupling. Rather than constructing bespoke binary serialization protocols and custom GPU canvas shaders, AMPS frames FINOS Perspective as a drop-in replacement that natively extends the simulation core's existing Apache Arrow memory infrastructure (Chapters \ref{ch:zero_copy_ipc} and \ref{ch:multi_patch_harvesting}) directly into the client browser.
 
 \section{The Failure of Client-Side Virtual DOMs}
 
@@ -15,11 +15,11 @@ At high-frequency simulation rates, this architecture causes immediate catastrop
     \item \textbf{Layout Thrashing:} Mutating the browser's Document Object Model (DOM) to update order book depth ladders or price charts forces continuous recalculation of geometric styles, locking the browser's main UI thread.
 \end{enumerate}
 
-Similarly, attempting to use server-side rendering libraries like HTMX to swap tabular HTML markup at high frame rates fails due to layout thrashing. Consequently, AMPS enforces a complete separation: HTMX is utilized strictly for low-frequency configuration and draft state lifecycle management, while high-frequency telemetry is streamed via raw binary buffers directly into WebGL canvas shaders.
+Similarly, attempting to use server-side rendering libraries like HTMX to swap tabular HTML markup at high frame rates fails due to layout thrashing. Consequently, AMPS enforces a complete separation: HTMX is utilized strictly for low-frequency configuration and draft state lifecycle management, while high-frequency telemetry is streamed as continuous Apache Arrow Record Batches directly into a WebAssembly-compiled data grid (FINOS Perspective), bypassing the DOM while maintaining zero-copy semantics.
 
-\section{Binary WebSockets and WebGL Hardware Acceleration}
+\section{Arrow IPC WebSockets and Wasm Hardware Acceleration}
 
-To eliminate JSON serialization and DOM overhead, AMPS executes all high-frequency telemetry streaming through binary WebSockets and WebGL canvas rendering.
+To eliminate JSON serialization and DOM layout overhead, AMPS executes all high-frequency telemetry streaming through binary WebSockets carrying Apache Arrow IPC streams directly into FINOS Perspective's WebAssembly execution environment. This architecture establishes a seamless zero-copy and zero-deserialization pipeline spanning from the backend's \texttt{PyCapsule} Arrow pointers to the frontend's Wasm linear memory.
 
 \begin{figure}[htbp]
 \centering
@@ -31,27 +31,41 @@ To eliminate JSON serialization and DOM overhead, AMPS executes all high-frequen
     \node[box, fill=green!15] (engine) {Numba Matching\\(Writes Arrays)};
     \node[box, fill=red!15] (redis) [right=1.5cm of engine] {Redis PubSub\\(Unix Socket)};
     \node[box, fill=yellow!15] (fastapi) [right=1.5cm of redis] {FastAPI Server\\(\texttt{uvloop} Fanout)};
-    \node[box, fill=blue!15] (browser) [below=1.2cm of fastapi] {Browser WebGL\\(\texttt{DataView} $\rightarrow$ Shaders)};
+    \node[box, fill=blue!15] (browser) [below=1.2cm of fastapi] {FINOS Perspective\\(Wasm / Arrow Native)};
 
     \draw[arr] (engine) -- node[above] {\footnotesize Zero-Copy} (redis);
     \draw[arr] (redis) -- node[above] {\footnotesize Async Sub} (fastapi);
-    \draw[arr] (fastapi) -- node[right] {\footnotesize Binary WS} (browser);
+    \draw[arr] (fastapi) -- node[right] {\footnotesize Arrow IPC over WS} (browser);
 \end{tikzpicture}
-\caption{The end-to-end telemetry streaming pipeline. Decoupling matching loops from client network I/O via local Redis PubSub and WebGL hardware acceleration.}
-\label{fig:webgl_redis_pipeline}
+\caption{The end-to-end telemetry streaming pipeline. Decoupling matching loops from client network I/O via local Redis PubSub, WebSocket Arrow IPC streaming, and in-browser Wasm-accelerated analytics via FINOS Perspective.}
+\label{fig:perspective_redis_pipeline}
 \end{figure}
 
-\subsection{Binary C-Struct Serialization}
+\subsection{Zero-Copy Apache Arrow IPC Serialization}
 
-When the matching engine concludes a simulation tick, it extracts the top-of-book depth, price levels, and agent telemetry directly from the contiguous NumPy arrays. Rather than formatting text strings, the engine packs the numerical metrics into a fixed-width binary C-struct. 
+In naive financial visualization systems, developers often resort to packing numerical metrics into ad-hoc binary C-structs. While this avoids text-based JSON encoding, it introduces severe architectural brittleness: the client must maintain synchronized byte-offset definitions and manually parse fields using JavaScript \texttt{DataView} or typed array slice offsets. Any schema drift -- such as adding an order identifier or higher-order book depth levels -- requires error-prone manual refactoring across both C/Python serialization kernels and JavaScript client decoding logic.
 
-On the client side, the web browser receives raw byte buffers over the WebSocket. JavaScript \texttt{DataView} and \texttt{Float32Array} typed buffers read the binary stream directly in $O(1)$ time, eliminating object allocations and garbage collection overhead.
+To achieve strict high-frequency throughput without custom serialization fragility, AMPS standardizes its streaming transport entirely on the \textbf{Apache Arrow IPC streaming protocol} \cite{apache_arrow_c_data}, unifying the UI layer with the IPC mechanisms already deployed in Chapter \ref{ch:zero_copy_ipc} (shared memory buffers) and Chapter \ref{ch:multi_patch_harvesting} (offline trajectory record batches).
 
-\subsection{GPU Shader Direct Rendering}
+When the matching engine completes a simulation tick, the contiguous NumPy arrays capturing top-of-book depth ladders, Order Flow Imbalance (OFI), transaction prices, and agent state metrics are encapsulated as zero-copy \texttt{pyarrow.RecordBatch} objects via the Arrow C Data Interface (\texttt{PyCapsule} pointers). Rather than executing costly memory reallocations or transpositions, the backend leverages \texttt{pyarrow.ipc.RecordBatchStreamWriter} to emit encapsulated Arrow IPC stream chunks directly into contiguous byte buffers. 
 
-Instead of manipulating HTML elements, the client dashboard renders order book depth, Order Flow Imbalance, and price trajectories onto an HTML5 \texttt{<canvas>} surface powered by WebGL. 
+Because Apache Arrow defines an identical columnar binary memory layout across all programming language runtimes, these binary IPC chunks require zero data transformation when streamed over WebSocket frames. When received by the browser, the raw WebSocket payload arrives as an \texttt{ArrayBuffer} representing a valid Arrow Record Batch, which FINOS Perspective consumes directly without deserialization.
 
-The binary float buffers are bound directly to WebGL vertex buffer objects (VBOs). Custom vertex and fragment shaders render depth ladders and liquidity voiding as geometric polygons directly on the client's GPU, delivering rock-solid 60 FPS rendering regardless of market event volume.
+\subsection{Wasm Table Ingestion and Perspective Virtualized Rendering}
+
+Writing and maintaining custom WebGL vertex and fragment shaders for client-side financial visualization introduces substantial engineering overhead. Custom GPU shaders require manual management of vertex buffer objects (VBOs), projection matrices, and tessellation routines for order book ladders, all while remaining decoupled from interactive analytical operations like dynamic filtering, column sorting, and multi-dimensional aggregation.
+
+AMPS replaces the custom shader stack with \textbf{FINOS Perspective} \cite{finos_perspective}, an open-source streaming data engine and visualization component purpose-built for financial trading desks. Perspective executes via a four-tier architecture:
+\begin{enumerate}
+    \item \textbf{C++ WebAssembly Query Engine (\texttt{perspective.wasm}):} Perspective's core analytical engine is authored in C++ and compiled to WebAssembly via Emscripten. The Wasm runtime executes entirely inside a dedicated HTML5 Web Worker thread, completely isolating computationally intensive tabular aggregations, multi-index pivots, and hyper-cube index calculations from the browser's UI thread.
+    \item \textbf{Native Arrow Ingestion via \texttt{table.update()}:} When the WebSocket client receives an Arrow IPC buffer, it invokes Perspective's table interface:
+    \begin{equation}
+        \texttt{table.update(arrayBuffer)}
+    \end{equation}
+    Perspective's C++ core directly traverses the Apache Arrow columnar chunks in Wasm linear memory. Because Arrow's binary representation matches Perspective's internal columnar layout, ingestion executes in sub-millisecond time without creating JavaScript objects or triggering V8 garbage collector pauses.
+    \item \textbf{Virtualized DOM Data Grids (\texttt{@perspective-dev/viewer-datagrid}):} For tabular displays -- such as 20-level LOB depth ladders, order blotters, and institutional agent inventories -- Perspective mounts a high-performance virtualized grid. Only the DOM elements currently visible within the viewport are created and mutated, achieving stable 60 FPS updates even when streaming hundreds of thousands of simulation updates.
+    \item \textbf{Integrated Canvas/WebGL Charting (\texttt{@perspective-dev/viewer-charts}):} To visualize continuous market dynamics, Perspective integrates hardware-accelerated charting powered by D3FC and WebGL out of the box. The engine natively transforms streaming Arrow columns into real-time Limit Order Book depth curves, Order Flow Imbalance histograms, and multi-agent PnL trajectories. Researchers can interactively pivot, slice, and cross-filter high-dimensional agent telemetry directly in the browser without writing a single line of shader code.
+\end{enumerate}
 
 \section{I/O Decoupling via Redis PubSub}
 
@@ -62,7 +76,7 @@ The Numba matching engine is pinned to host Gracemont E-cores to preserve micros
 To eliminate this vulnerability, AMPS decouples the core engine from external network I/O using local \textbf{Redis Publish/Subscribe (PubSub)}:
 
 \begin{enumerate}
-    \item \textbf{Fire-and-Forget Publisher:} At the end of each tick, a dedicated telemetry thread transmits the packed binary C-struct to a local Redis instance over a Unix domain socket (\texttt{amps\_telemetry}). Because Unix domain sockets operate entirely in host memory, this publish operation executes in under 50 microseconds and never blocks the engine.
+    \item \textbf{Fire-and-Forget Publisher:} At the end of each tick, a dedicated telemetry thread transmits the serialized Apache Arrow IPC record batch to a local Redis instance over a Unix domain socket (\texttt{amps\_telemetry}). Because Unix domain sockets operate entirely in host memory, this publish operation executes in under 50 microseconds and never blocks the engine.
     \item \textbf{Asynchronous Multiplexing Subscriber:} The FastAPI web server \cite{selivanov2016uvloop}, running in an isolated process on dedicated cores, subscribes to Redis. FastAPI fans out the binary stream to arbitrary connected WebSockets.
     \item \textbf{Stale Packet Dropping:} If an individual client connection buffers or lags, FastAPI automatically drops stale packets for that specific subscriber, completely isolating both the Redis queue and the matching engine from network congestion.
 \end{enumerate}

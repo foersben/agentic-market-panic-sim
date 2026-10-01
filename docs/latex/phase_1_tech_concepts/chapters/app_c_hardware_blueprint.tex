@@ -110,6 +110,8 @@ This topology leverages the microarchitectural structure of the Gracemont cluste
 
 Execution boundaries are enforced at system initialization using modern cgroup v2 interfaces via sysfs:
 
+\vspace{\baselineskip}
+
 \captionof{listing}{System initialization script for cgroup v2 CPU core isolation.}
 \label{listing:cgroup_isolation}
 \begin{minted}{bash}
@@ -141,6 +143,7 @@ echo "0"     | sudo tee "${CGROUP_ROOT}/amps_ecores/cpuset.mems" > /dev/null
 echo $$ | sudo tee "${CGROUP_ROOT}/amps_ecores/cgroup.procs" > /dev/null
 echo "cgroup v2 isolation topology configured. PID $$ pinned to E-Cores."
 \end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Memory Paging Optimization: 2MB Transparent HugePages (THP) Strategy}
 
@@ -180,6 +183,8 @@ The CPU relies on a hardware translation cache called the Translation Lookaside 
 
 Configuring 2 Megabyte (MB) Transparent HugePages (THP) reduces the required page table entries from 3 million down to roughly 6,000 for a 12GB memory footprint -- a 500-fold reduction. The CPU TLB can easily retain these 6,000 entries, near-completely eliminating TLB misses during agent state traversals.
 
+\vspace{\baselineskip}
+
 \captionof{listing}{System initialization script for dynamic 2MB Transparent HugePages.}
 \label{listing:thp_config}
 \begin{minted}{bash}
@@ -200,6 +205,7 @@ echo 4194304 | sudo tee /proc/sys/kernel/shmall
 
 echo "THP configuration successfully initialized."
 \end{minted}
+\par\vspace*{\baselineskip}
 
 \section{Optimization Blueprint 1: Tiered KV-Cache VRAM Pinning Policy}
 
@@ -268,6 +274,8 @@ By profiling the swarm, the system identifies the top 50 to 80 highest-frequency
 
 The \texttt{TieredVRAMManager} governs GPU memory allocations by programmatically locking high-frequency agent KV-tensors into pinned host memory (\texttt{torch.cuda.HostRegister}) and persistent VRAM pools, while managing fallback dynamic page allocations for low-frequency agents.
 
+\vspace{\baselineskip}
+
 \captionof{listing}{Tiered KV-Cache memory manager implementing CUDA host registration and async DMA transfers.}
 \label{listing:tiered_vram_manager}
 \begin{minted}{python}
@@ -319,7 +327,7 @@ class TieredVRAMManager:
         self.agent_tier_map[demote_agent_id] = 2
         self.agent_tier_map[promote_agent_id] = 1
 \end{minted}
-
+\par\vspace*{\baselineskip}
 Table \ref{tab:agent_execution_tiers} compares the operational profiles of Tier-1 and Tier-2 agents.
 
 \begin{table}[htbp]
@@ -360,6 +368,8 @@ To resolve this inefficiency, AMPS implements a state input discretization pipel
 
 By applying this transformation, minor floating-point noise is filtered into discrete integer bins. Hundreds of micro-agents perceiving slightly different continuous price movements synthesize identical discrete state descriptions (e.g., \texttt{OFI\_BIN: +4}, \texttt{PRICE\_DEVIATION: -2}).
 
+\vspace{\baselineskip}
+
 \captionof{listing}{Vectorized state metric discretization kernel compiled with Numba.}
 \label{listing:discretize_market_state}
 \begin{minted}{python}
@@ -384,6 +394,7 @@ def discretize_market_state(
         
     return discrete_states
 \end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Singleflight Request Coalescing Engine Architecture}
 
@@ -446,6 +457,8 @@ To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Inva
 \end{itemize}
 
 To enforce hardware-level write sequencing without relying on invalid Python object allocations or non-exported symbols, AMPS invokes explicit atomic memory fences via a compiled CFFI native extension (\texttt{libatomic\_fence.so}):
+
+\vspace{\baselineskip}
 
 \captionof{listing}{Lock-free shared memory ring buffer with explicit L1 cache line padding and compiled C-standard memory fences.}
 \label{listing:lockfree_ring_buffer}
@@ -524,6 +537,7 @@ class LockFreeMacroRingBuffer:
         self.tail_ptr[0] = (current_tail + 1) % self.capacity
         return np.frombuffer(data_bytes, dtype=np.float32)
 \end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Linear Decay Fallback \& Shock Degradation}
 
@@ -680,6 +694,8 @@ To achieve microsecond vector matching without AVX-512, AMPS utilizes the SSE4.2
 
 The Numba JIT engine compiles bit-counting functions directly into LLVM IR intrinsics (\texttt{llvm.ctpop.i64}) without heap allocations:
 
+\vspace{\baselineskip}
+
 \captionof{listing}{Hardware-accelerated bitwise Hamming distance computation using SSE4.2 POPCNT via Numba.}
 \label{listing:hamming_sse42}
 \begin{minted}{python}
@@ -700,6 +716,7 @@ def calculate_hamming_distance_sse42(
     
     return dist_upper + dist_lower
 \end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Threshold Window Relaxation \& Secondary FP32 Verification}
 
