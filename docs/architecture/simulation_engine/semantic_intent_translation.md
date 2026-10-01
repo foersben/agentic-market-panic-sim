@@ -12,7 +12,7 @@ sources: []
 
 # Semantic Intent Architecture
 
-To prevent generative models from hallucinating impossible arithmetic (such as hallucinating absolute dollar sizes or bypassing margin requirements), AMPS strictly isolates qualitative intent from quantitative execution. 
+To prevent generative models from hallucinating impossible arithmetic (such as hallucinating absolute dollar sizes or bypassing margin requirements), AMPS strictly isolates qualitative intent from quantitative execution.
 
 Transformers are utilized purely for their cognitive reasoning capabilities, while the Entity-Component-System (ECS) engine handles all deterministic scaling and constraint resolution.
 
@@ -31,7 +31,7 @@ If the ECS engine calculates that a semantic intent is mathematically impossible
 
 ## Data-Flow Matrix Specifications
 
-The following table documents the strict causal flow mapping qualitative JSON schema fields to quantitative ECS Component Arrays. 
+The following table documents the strict causal flow mapping qualitative JSON schema fields to quantitative ECS Component Arrays.
 
 | LLM Output Field | Data Type | ECS Array Target | Deterministic Transformation Rule |
 | :---- | :--- | :--- | :--- |

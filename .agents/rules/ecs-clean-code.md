@@ -27,7 +27,7 @@ Numba kernels, double-buffered ECS arrays, or branchless SIMD float masks.
 **Zero structural refactors are permitted without first passing `just test-parity`,
 `just test-replay`, and the `heap_allocation` pytest marker.**
 
-```
+```text
 app/engine/core/diffusion.py
 app/engine/core/biotope.py
 app/engine/core/flow/stencils.py
@@ -93,6 +93,7 @@ where the elements are logically related (not coordinate pairs) MUST be converte
 self-documenting and allow mypy to catch mismatched assignments.
 
 **Exemptions**:
+
 * `tuple[int, int]` coordinate pairs in hot-path JIT scope.
 * `tuple[bytes, int]` where bytes is a response body and int is its pre-computed length (these
   are acceptable if no better abstraction exists, but prefer `ExportResult`).
@@ -100,6 +101,7 @@ self-documenting and allow mypy to catch mismatched assignments.
 ### Smell B - `getattr()` on Typed Dataclass / Pydantic Fields
 
 **Rule**: `getattr(obj, "field_name", default)` is prohibited when:
+
 1. `obj` is a `@dataclass(slots=True)` ECS component, AND
 2. The field is statically declared on the dataclass.
 
@@ -121,6 +123,7 @@ is serialised into JSON. Check the serialisation context before removing.
 
 **Rule**: Command-Query Separation applies to cold-path I/O and orchestration routines.
 Functions that both mutate state AND return a result should be split, unless:
+
 * The mutation is a write to an external resource (file, network, database) and the return
   is an acknowledgment (not a derived value from the mutation).
 
@@ -148,12 +151,13 @@ Functions that both mutate state AND return a result should be split, unless:
 
 ## Commit Convention for Refactor Commits
 
-```
+```text
 refactor(<module_shortname>): <Smell type> - <one_line_description>
 ```
 
 Examples:
-```
+
+```text
 refactor(conditions): Smell A - FloraMetrics/HerbivoreMetrics replace anonymous tuple returns
 refactor(herbivore_params): Smell B - direct field access replaces getattr on Pydantic schema
 refactor(live): Smell C - remove redundant float/int/bool casts on typed ECS component fields

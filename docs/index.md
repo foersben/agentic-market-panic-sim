@@ -19,13 +19,16 @@ The comprehensive academic and technical architecture for this simulator is docu
 ## System Architecture
 
 ### Infrastructure Layer
+
 * [Server Infrastructure & NAT Traversal](architecture/infrastructure/server_setup.md)
 
 ### Cognitive Engine Layer
+
 * [Semantic RAG Caching Pipeline](architecture/cognitive_engine/semantic_caching.md)
 * [Reinforcement Learning Distillation](architecture/cognitive_engine/reinforcement_learning.md)
 
 ### Simulation Engine Layer
+
 * [Semantic Intent Architecture](architecture/simulation_engine/semantic_intent_translation.md)
 
 ## MLOps & Operations

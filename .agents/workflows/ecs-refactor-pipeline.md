@@ -90,6 +90,7 @@ just test 2>&1 | tail -20 | tee /tmp/test_before.txt
 ```
 
 Parse and store:
+
 * Mean latency (ns) for each benchmark test from `bench_before.txt`.
 * `total_new_bytes` from `heap_before.txt`.
 * Test pass count from `test_before.txt`.
@@ -149,6 +150,7 @@ just test-matrix  # Data-Flow Matrix parity
 ```
 
 **On any failure**:
+
 ```bash
 git checkout <modified_files>
 ```
@@ -169,6 +171,7 @@ uv run pytest --no-cov -m heap_allocation -v 2>&1 | tee /tmp/heap_after.txt
 Compare each benchmark mean against the Step 2 baseline.
 
 **Hard Rollback Condition**:
+
 * Any benchmark mean increased by > 1% relative to baseline, OR
 * `total_new_bytes` from heap invariant exceeds 2048 bytes.
 
@@ -202,6 +205,7 @@ git push
 # Iteration Loop
 
 After a successful commit, return to Step 1 and select the next target. Stop when:
+
 * All Smell A and B items in the priority queue are resolved.
 * `just lint` reports zero issues.
 * `just test` passes with coverage >= 82%.

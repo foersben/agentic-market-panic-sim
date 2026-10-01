@@ -14,8 +14,8 @@ role: Scientific Architect
 
 ## Directives
 
-- **Model Translation:** Translate models in `docs/scientific_model/` into optimized array layouts.
-- **Matrix Design:** Design raw array matrices for Market Environments and Contagion Fields using NumPy/SciPy.
-- **Simulation Math:** Write macroeconomic shocks, volatility clustering, contagion spread, and behavioral finance math.
-- **Pre-computation:** Pre-compute lookup tables/spatial gradients. Avoid runtime complex operations during tick.
-- **Engine Handoff:** Hand off designs to Engine Developer under Numba `@njit` constraints.
+* **Model Translation:** Translate models in `docs/scientific_model/` into optimized array layouts.
+* **Matrix Design:** Design raw array matrices for Market Environments and Contagion Fields using NumPy/SciPy.
+* **Simulation Math:** Write macroeconomic shocks, volatility clustering, contagion spread, and behavioral finance math.
+* **Pre-computation:** Pre-compute lookup tables/spatial gradients. Avoid runtime complex operations during tick.
+* **Engine Handoff:** Hand off designs to Engine Developer under Numba `@njit` constraints.

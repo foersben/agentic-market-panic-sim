@@ -61,7 +61,6 @@ This directory houses the autonomous agent architecture, role specializations, h
 
 ---
 
-
 ## Agent Memory & Learning Journals
 
 * [Architecture State Map](memory/architecture_state_map.md) - Living topological map of module boundaries and dependency flows.

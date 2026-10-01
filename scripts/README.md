@@ -34,12 +34,12 @@ The scripts in this directory are governed by strict operational principles:
 
 * **Purpose:** Validates the entire AMPS knowledge bundle (`docs/` and `.agents/`) against Google's Open Knowledge Format (OKF v0.2).
 * **Key Checks:**
-  * Mandatory `type` declaration in YAML frontmatter for all concept documents.
-  * Lifecycle `status` enumeration (`draft`, `stable`, `deprecated`).
-  * Strict ISO 8601 UTC timestamp format (`YYYY-MM-DDTHH:MM:SSZ`).
-  * Actor string conventions.
-  * Source resource path existence resolution against document parent, workspace root, or `docs/`.
-  * Cross-document Markdown link validity and traversal containment.
+    * Mandatory `type` declaration in YAML frontmatter for all concept documents.
+    * Lifecycle `status` enumeration (`draft`, `stable`, `deprecated`).
+    * Strict ISO 8601 UTC timestamp format (`YYYY-MM-DDTHH:MM:SSZ`).
+    * Actor string conventions.
+    * Source resource path existence resolution against document parent, workspace root, or `docs/`.
+    * Cross-document Markdown link validity and traversal containment.
 * **CLI Syntax:**
 
   ```bash

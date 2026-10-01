@@ -21,6 +21,7 @@ In the **AMPS (Agentic Market Panic Simulator)** architecture, Reinforcement Lea
 
 ## Step-by-Step Architecture
 
+<!-- markdownlint-disable MD033 -->
 <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center; margin: 1.5rem 0; font-family: system-ui, sans-serif; font-size: 0.9rem;">
   
   <!-- Phase 1 & 2 -->
@@ -62,6 +63,7 @@ In the **AMPS (Agentic Market Panic Simulator)** architecture, Reinforcement Lea
     </div>
   </div>
 </div>
+<!-- markdownlint-enable MD033 -->
 
 The distillation pipeline executes through the following phases:
 

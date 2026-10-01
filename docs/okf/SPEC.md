@@ -8,7 +8,7 @@ tags: [okf, spec, standards]
 ---
 # Open Knowledge Format (OKF)
 
-**Version 0.2**
+Version 0.2
 
 OKF is an open, human- and agent-friendly format for representing
 *knowledge*: the metadata, context, and curated insight that surrounds
@@ -33,14 +33,14 @@ and many incompatible conventions are emerging. OKF takes the position
 that knowledge is best represented in commonly accessible, established
 formats that are:
 
-- **Readable** by humans without tooling.
-- **Parseable** by agents without bespoke SDKs.
-- **Diffable** in version control.
-- **Portable** across tools, organizations, and time.
+* **Readable** by humans without tooling.
+* **Parseable** by agents without bespoke SDKs.
+* **Diffable** in version control.
+* **Portable** across tools, organizations, and time.
 
 Increasingly, a knowledge corpus is not authored once and then read: it
-is **continuously written and maintained by agents**. When most concepts 
-are machine-generated, a consumer needs answers that a plain 
+is **continuously written and maintained by agents**. When most concepts
+are machine-generated, a consumer needs answers that a plain
 markdown-plus-frontmatter convention does not make first-class:
 
 1. What was this created from, and how was it verified? (**provenance**)
@@ -50,8 +50,8 @@ markdown-plus-frontmatter convention does not make first-class:
 5. Was this number produced the way we said it must be? (**attestation**)
 
 OKF v0.2 makes provenance, trust, lifecycle, and attestation first-class
-while keeping the format minimally opinionated. The format is minimally 
-opinionated. It standardizes only the small set of structural conventions 
+while keeping the format minimally opinionated. The format is minimally
+opinionated. It standardizes only the small set of structural conventions
 needed to make a knowledge corpus self-describing - anything beyond that
 is left to the producer.
 
@@ -67,49 +67,49 @@ is left to the producer.
 
 ### Non-goals
 
-- Defining a fixed taxonomy of concept types.
-- Prescribing storage, serving, or query infrastructure.
-- Replacing domain-specific schemas (Avro, Protobuf, OpenAPI, and so on).
+* Defining a fixed taxonomy of concept types.
+* Prescribing storage, serving, or query infrastructure.
+* Replacing domain-specific schemas (Avro, Protobuf, OpenAPI, and so on).
   OKF *references* them; it does not subsume them.
-- Specifying a packaging or invocation standard for the code an executor
+* Specifying a packaging or invocation standard for the code an executor
   or attester points at. OKF fixes the interface, not the packaging.
 
 ---
 
 ## 2. Terminology
 
-- **Knowledge Bundle** (or **bundle**): A self-contained, hierarchical
+* **Knowledge Bundle** (or **bundle**): A self-contained, hierarchical
   collection of knowledge documents. The unit of distribution.
-- **Concept**: A single unit of knowledge within a bundle, represented as
+* **Concept**: A single unit of knowledge within a bundle, represented as
   one markdown document. It may describe a tangible asset (a table, an
   API), an abstract idea (a metric, a business process), or anything in
   between.
-- **Concept ID**: The path of the concept's file within the bundle, with
+* **Concept ID**: The path of the concept's file within the bundle, with
   the `.md` suffix removed.
-- **Frontmatter**: A YAML metadata block delimited by `---` at the top of
+* **Frontmatter**: A YAML metadata block delimited by `---` at the top of
   a markdown file.
-- **Body**: Everything in the file after the frontmatter.
-- **Link**: A standard markdown link from one concept to another, used to
+* **Body**: Everything in the file after the frontmatter.
+* **Link**: A standard markdown link from one concept to another, used to
   express relationships beyond the implicit parent/child hierarchy.
-- **Source**: A material a concept derives from, external or internal to
+* **Source**: A material a concept derives from, external or internal to
   the bundle, recorded in the `sources` frontmatter field.
-- **Provenance**: The set of sources a concept derives from.
-- **Credibility signal**: An objective, per-source fact (`author`,
+* **Provenance**: The set of sources a concept derives from.
+* **Credibility signal**: An objective, per-source fact (`author`,
   `usage_count`, `last_modified`) used to infer trust; OKF records the
   signals, not a verdict (see §5.1).
-- **Actor**: A string identifying who or what performed an action, using
+* **Actor**: A string identifying who or what performed an action, using
   the convention `<producer>/<version>` for agents, `human:<id>` for
   people, and `process:<id>` for automated processes (see §7).
-- **Trust tier**: A level derived from a concept's `verified` field:
+* **Trust tier**: A level derived from a concept's `verified` field:
   unverified, machine-confirmed, or human-reviewed (see §5.3).
-- **Attested Computation**: A concept (`type: Attested Computation`)
+* **Attested Computation**: A concept (`type: Attested Computation`)
   carrying a sanctioned way to compute a value, so a consumer can confirm
   the value was produced by running it (see §10).
-- **Executor**: Run instructions or code that executes a computation and
+* **Executor**: Run instructions or code that executes a computation and
   returns a receipt (see §10.2).
-- **Receipt**: The evidence a run returns, shaped by `executor.receipt`; a
+* **Receipt**: The evidence a run returns, shaped by `executor.receipt`; a
   runtime artifact, not stored in the bundle (see §10).
-- **Attester**: Deterministic (no-LLM) code that inspects a receipt and
+* **Attester**: Deterministic (no-LLM) code that inspects a receipt and
   returns a verdict (see §10.2).
 
 ---
@@ -120,7 +120,7 @@ A bundle is a directory tree of markdown files. The directory structure
 is independent of the domain: producers organize concepts however makes
 sense for the knowledge being captured.
 
-```
+```text
 path/to/bundle/
   index.md                      # Optional. Directory listing for progressive disclosure.
   log.md                        # Optional. Chronological history of updates.
@@ -134,10 +134,10 @@ path/to/bundle/
 
 A bundle MAY be distributed as:
 
-- A git repository (recommended, since it provides history, attribution,
+* A git repository (recommended, since it provides history, attribution,
   and diffs).
-- A tarball or zip archive of the directory.
-- A subdirectory within a larger repository.
+* A tarball or zip archive of the directory.
+* A subdirectory within a larger repository.
 
 ### 3.1 Reserved filenames
 
@@ -182,7 +182,7 @@ tags: [<tag>, <tag>, ...]          # Optional
 
 **Required:**
 
-- `type`: A short string identifying the kind of concept. Consumers use it
+* `type`: A short string identifying the kind of concept. Consumers use it
   for routing, filtering, and presentation. Example values:
   `BigQuery Table`, `BigQuery Dataset`, `API Endpoint`, `Metric`,
   `Playbook`, `Reference`, `Attested Computation`.
@@ -197,14 +197,14 @@ fully conformant (§11).
 
 **Recommended:**
 
-- `title`: Human-readable display name. If omitted, consumers MAY derive a
+* `title`: Human-readable display name. If omitted, consumers MAY derive a
   title from the filename.
-- `description`: A single sentence summarizing the concept. Used by
+* `description`: A single sentence summarizing the concept. Used by
   `index.md` generators, search snippets, and previews.
-- `resource`: A URI that uniquely identifies the underlying asset the
+* `resource`: A URI that uniquely identifies the underlying asset the
   concept describes. Absent for concepts that describe abstract ideas
   rather than physical resources.
-- `tags`: A YAML list of short strings for cross-cutting categorization.
+* `tags`: A YAML list of short strings for cross-cutting categorization.
 
 The optional **provenance**, **trust**, and **lifecycle** families (§5) and
 the **computation** fields for Attested Computation concepts (§10) may also
@@ -310,14 +310,14 @@ usage_window: { from: 2026-06-01T00:00:00Z, to: 2026-06-30T00:00:00Z }
 
 Each `sources` entry:
 
-- `resource`: REQUIRED within an entry. Names either a concrete artifact a
+* `resource`: REQUIRED within an entry. Names either a concrete artifact a
   consumer can follow (an absolute URL, a bundle-relative path, or a path
   into a `references/` subdirectory, §6) or a population or scope descriptor
   it cannot (for example `all queries in BigQuery project X`).
-- `id`: Optional. A stable key used to attribute individual claims (see
+* `id`: Optional. A stable key used to attribute individual claims (see
   below). SHOULD be present when the body cites the source.
-- `title`: Optional. Human-readable label for the source.
-- The optional credibility signals `author`, `usage_count`, and
+* `title`: Optional. Human-readable label for the source.
+* The optional credibility signals `author`, `usage_count`, and
   `last_modified`, described next.
 
 **Source credibility signals.** OKF records objective, per-source signals
@@ -327,13 +327,12 @@ subjective, unportable across consumers, and goes stale. Credibility is
 *inferred* from the signals, the same way trust tiers are (§5.3), not
 stored. Each signal is optional and lives on a `sources` entry:
 
-- `author`: Who or what produced the source, in the actor convention (§7).
+* `author`: Who or what produced the source, in the actor convention (§7).
   An authority signal.
-- `usage_count`: How often `resource` was exercised (dashboard views, query
+* `usage_count`: How often `resource` was exercised (dashboard views, query
   executions, page reads) over `usage_window`. An adoption and liveness
   signal. For a single artifact it is that artifact's own exercise count;
   for a scope descriptor it is the number of exercises within the scope that
   touch the concept.
-- `last_modified`: When the source itself last changed. A recency signal,
-  distinct from `generated.at` (§5.2), which records when the concept was
-  
+* `last_modified`: When the source itself last changed. A recency signal,
+  distinct from `generated.at` (§5.2), which records when the concept was created.

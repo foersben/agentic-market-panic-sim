@@ -50,45 +50,45 @@ graph TD
 ### The Specialist Roster
 
 * **01. Orchestrator**
-  * **Role:** Command ingress and workflow manager.
-  * **Jurisdiction:** Broad workflow planning, but restricted from writing math/kernels.
-  * **Dependencies:** Triggers all sub-agents and orchestrates `.agents/workflows/`.
+    * **Role:** Command ingress and workflow manager.
+    * **Jurisdiction:** Broad workflow planning, but restricted from writing math/kernels.
+    * **Dependencies:** Triggers all sub-agents and orchestrates `.agents/workflows/`.
 * **02. Scientific Architect**
-  * **Role:** Translates ecological theories into optimized matrix operations.
-  * **Jurisdiction:** `docs/scientific_model/`.
-  * **Dependencies:** Hands off numerical designs to the Engine Developer.
+    * **Role:** Translates ecological theories into optimized matrix operations.
+    * **Jurisdiction:** `docs/scientific_model/`.
+    * **Dependencies:** Hands off numerical designs to the Engine Developer.
 * **03. Engine Developer**
-  * **Role:** Implements the core Entity-Component-System (ECS) loops and spatial hashing.
-  * **Jurisdiction:** `app/engine/`.
-  * **Dependencies:** Relies on the Scientific Architect; passes simulation logic to QA Automator.
+    * **Role:** Implements the core Entity-Component-System (ECS) loops and spatial hashing.
+    * **Jurisdiction:** `app/engine/`.
+    * **Dependencies:** Relies on the Scientific Architect; passes simulation logic to QA Automator.
 * **04. QA Automator**
-  * **Role:** Validates deterministic execution, monitors performance regressions, and writes mutation tests.
-  * **Jurisdiction:** `tests/`.
-  * **Dependencies:** Validates code from the Engine and API Developers.
+    * **Role:** Validates deterministic execution, monitors performance regressions, and writes mutation tests.
+    * **Jurisdiction:** `tests/`.
+    * **Dependencies:** Validates code from the Engine and API Developers.
 * **05. Docs Librarian**
-  * **Role:** Synchronizes the documentation tree and manages formatting.
-  * **Jurisdiction:** `docs/` and `zensical.toml`.
-  * **Dependencies:** None.
+    * **Role:** Synchronizes the documentation tree and manages formatting.
+    * **Jurisdiction:** `docs/` and `zensical.toml`.
+    * **Dependencies:** None.
 * **06. Git Operator**
-  * **Role:** Manages the repository lifecycle, versioning, and commit integrity.
-  * **Jurisdiction:** Git tree and `.github/workflows/`.
-  * **Dependencies:** Only acts after QA signs off; halts on missing cryptographic keys.
+    * **Role:** Manages the repository lifecycle, versioning, and commit integrity.
+    * **Jurisdiction:** Git tree and `.github/workflows/`.
+    * **Dependencies:** Only acts after QA signs off; halts on missing cryptographic keys.
 * **07. API & UI Developer**
-  * **Role:** Builds the FastAPI backends, WebSockets, and HTMX server-rendered interfaces.
-  * **Jurisdiction:** `app/api/` and `app/ui/`.
-  * **Dependencies:** Supplies the front-end for the engine; verified by QA.
+    * **Role:** Builds the FastAPI backends, WebSockets, and HTMX server-rendered interfaces.
+    * **Jurisdiction:** `app/api/` and `app/ui/`.
+    * **Dependencies:** Supplies the front-end for the engine; verified by QA.
 * **08. Telemetry & Data Engineer**
-  * **Role:** Manages Zarr serialization schemas and out-of-core Polars analytics.
-  * **Jurisdiction:** `app/telemetry/`.
-  * **Dependencies:** Ingests tick outcomes from the Engine Developer.
+    * **Role:** Manages Zarr serialization schemas and out-of-core Polars analytics.
+    * **Jurisdiction:** `app/telemetry/`.
+    * **Dependencies:** Ingests tick outcomes from the Engine Developer.
 * **09. Matrix Auditor**
-  * **Role:** Scans `docs/scientific_model/` for Data-Flow Matrix table coverage and cross-checks Markdown tables against live Pytest traces.
-  * **Jurisdiction:** `docs/scientific_model/` and `tests/integration/scientific_invariants/`.
-  * **Dependencies:** Issues diff tasks to QA Automator and Docs Librarian.
+    * **Role:** Scans `docs/scientific_model/` for Data-Flow Matrix table coverage and cross-checks Markdown tables against live Pytest traces.
+    * **Jurisdiction:** `docs/scientific_model/` and `tests/integration/scientific_invariants/`.
+    * **Dependencies:** Issues diff tasks to QA Automator and Docs Librarian.
 * **10. Causal Verifier**
-  * **Role:** Monitors engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates.
-  * **Jurisdiction:** `app/engine/systems/`.
-  * **Dependencies:** Asserts float mask gates (`alive_mask`, `capacity_mask`) in Numba kernels.
+    * **Role:** Monitors engine execution traces for implicit state leaks, zero-division hazards, and unmasked dead-entity updates.
+    * **Jurisdiction:** `app/engine/systems/`.
+    * **Dependencies:** Asserts float mask gates (`alive_mask`, `capacity_mask`) in Numba kernels.
 
 ---
 

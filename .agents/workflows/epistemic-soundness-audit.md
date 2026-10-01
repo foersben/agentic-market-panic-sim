@@ -26,55 +26,55 @@ Run `/epistemic-soundness-audit` whenever validating scientific model fidelity, 
 # The 10 Detailed Thematic Audit Slices
 
 * **Slice 1: Spatiotemporal Anchor & Dimensional Homogeneity**
-  * Anchor constants ($\Delta L = 1\text{ m}$, $\Delta \tau = 1\text{ hr}$, $\Delta E = 100\text{ kcal}$).
-  * Power-of-two bitwise toroidal coordinate wrapping (`& (width - 1)`).
-  * Static array pre-allocation bounds (Rule of 16).
+    * Anchor constants ($\Delta L = 1\text{ m}$, $\Delta \tau = 1\text{ hr}$, $\Delta E = 100\text{ kcal}$).
+    * Power-of-two bitwise toroidal coordinate wrapping (`& (width - 1)`).
+    * Static array pre-allocation bounds (Rule of 16).
 
 * **Slice 2: Continuous Transport PDEs & Stencils**
-  * Double-buffered 2D isotropic Gaussian convolution kernels (`biotope.py`).
-  * Semi-Lagrangian advection and mass conservation.
-  * FTZ / DAZ subnormal float truncation below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
-  * Jacobi potential relaxation and obstacle masking (`flow_field.py`).
+    * Double-buffered 2D isotropic Gaussian convolution kernels (`biotope.py`).
+    * Semi-Lagrangian advection and mass conservation.
+    * FTZ / DAZ subnormal float truncation below `SIGNAL_EPSILON` ($1\times 10^{-4}$).
+    * Jacobi potential relaxation and obstacle masking (`flow_field.py`).
 
 * **Slice 3: Autotrophic Metabolic Kinetics & Structural Growth**
-  * Decoupled Dual-Proxy biomass architecture ($E_{\text{current}}$ vs. $M_{\text{structural}}$).
-  * Photosynthetic daily flux and maintenance respiration.
-  * Anemochorous seed dispersal aerodynamics and polar raycasting.
+    * Decoupled Dual-Proxy biomass architecture ($E_{\text{current}}$ vs. $M_{\text{structural}}$).
+    * Photosynthetic daily flux and maintenance respiration.
+    * Anemochorous seed dispersal aerodynamics and polar raycasting.
 
 * **Slice 4: Subterranean Symbiosis & Phloem Networks**
-  * Mycorrhizal fungal graph topology and root link maintenance taxation.
-  * Phloem source-to-sink translocation kinetics.
-  * Subterranean multi-hop signal propagation and hop attenuation.
+    * Mycorrhizal fungal graph topology and root link maintenance taxation.
+    * Phloem source-to-sink translocation kinetics.
+    * Subterranean multi-hop signal propagation and hop attenuation.
 
 * **Slice 5: Botanical Defenses (Constitutive vs. Inducible)**
-  * Trichome mechanical density, spine deterrents, and structural wear.
-  * Herbivore grazing damage thresholds and stress-induced apparent nutrition discounts.
-  * Induced semiochemical emission cascades and olfactory camouflage.
+    * Trichome mechanical density, spine deterrents, and structural wear.
+    * Herbivore grazing damage thresholds and stress-induced apparent nutrition discounts.
+    * Induced semiochemical emission cascades and olfactory camouflage.
 
 * **Slice 6: Heterotrophic Kinematics & Foraging Dynamics**
-  * Softmax stochastic gradient ascent across von Neumann orthogonal tiles.
-  * Holling Type II functional consumption curves and handling times.
-  * Charnov Marginal Value Theorem (MVT) patch residence and departure thresholds.
+    * Softmax stochastic gradient ascent across von Neumann orthogonal tiles.
+    * Holling Type II functional consumption curves and handling times.
+    * Charnov Marginal Value Theorem (MVT) patch residence and departure thresholds.
 
 * **Slice 7: Population Dynamics & Energetic Attrition**
-  * Density-dependent carrying capacity and branchless volumetric collision masking.
-  * Swarm mitosis surplus energy criteria.
-  * Smooth starvation attrition budgets vs. unphysical binary collapse.
+    * Density-dependent carrying capacity and branchless volumetric collision masking.
+    * Swarm mitosis surplus energy criteria.
+    * Smooth starvation attrition budgets vs. unphysical binary collapse.
 
 * **Slice 8: Multi-Scale Decoupling & Loop Orchestration**
-  * Fast ($1\times$), Medium ($24\times$), and Slow ($168\times$) loop boundaries.
-  * Phase-staggered cohort execution (`(entity_id % S) == (tick % S)`).
-  * Double-buffering immutability (zero intra-tick read-after-write hazards).
+    * Fast ($1\times$), Medium ($24\times$), and Slow ($168\times$) loop boundaries.
+    * Phase-staggered cohort execution (`(entity_id % S) == (tick % S)`).
+    * Double-buffering immutability (zero intra-tick read-after-write hazards).
 
 * **Slice 9: Empirical Data Pipeline & Allometric Scaling**
-  * Trait extraction pipeline (`TRY`, `PanTHERIA`, `BIEN`, `GIFT`, `LEDA`).
-  * Kleiber's Law allometric metabolic scaling ($BMR \propto M^{0.75}$).
-  * Parameter reconciliation between ETL exports and engine runtime presets.
+    * Trait extraction pipeline (`TRY`, `PanTHERIA`, `BIEN`, `GIFT`, `LEDA`).
+    * Kleiber's Law allometric metabolic scaling ($BMR \propto M^{0.75}$).
+    * Parameter reconciliation between ETL exports and engine runtime presets.
 
 * **Slice 10: WIP/CIP Boundary Governance**
-  * Evolutionary Encapsulated Design Space Exploration (EEDSE).
-  * Distributed Ray/Tune Pareto optimization scaffolding.
-  * Agentic diagnostic observer integration and HITL/AITL intervention gates.
+    * Evolutionary Encapsulated Design Space Exploration (EEDSE).
+    * Distributed Ray/Tune Pareto optimization scaffolding.
+    * Agentic diagnostic observer integration and HITL/AITL intervention gates.
 
 # Step-by-Step Execution Protocol
 
