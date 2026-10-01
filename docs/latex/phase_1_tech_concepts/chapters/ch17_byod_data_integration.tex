@@ -1,0 +1,51 @@
+\chapter{BYOD Architecture, Polars Rust CSV Parsing \& LOBSTER / hkgsas Ingestion}
+\label{ch:byod_architecture}
+
+While the theoretical mechanics of the Limit Order Book are mathematically defined, empirical simulation requires massive streams of historical, Level 2 (L2) and Level 3 (L3) market depth to calibrate scenario patches and bootstrap the matching engine. This chapter addresses the legal, logistical, and computational challenges of sourcing institutional-grade market data, detailing the necessity of a "Bring Your Own Data" (BYOD) architecture, multi-threaded Rust ingestion, and regional exchange adapters.
+
+\section{The NASDAQ LOBSTER Licensing Constraint}
+
+In academic quantitative finance and market microstructure literature, the gold standard for high-frequency order book data is the LOBSTER dataset (Limit Order Book System -- The Efficient Reconstructor) \cite{huang2011lobster}. LOBSTER provides message-level, tick-by-tick reconstructions of the NASDAQ Limit Order Book, capturing every single order submission, cancellation, execution, and hidden order execution with nanosecond timestamp precision.
+
+However, LOBSTER is constructed directly from proprietary NASDAQ Historical TotalView\allowbreak-ITCH data feeds. Accessing this data requires executing NASDAQ's Global Subscriber Agreement, a strict commercial contract that explicitly prohibits the redistribution, hosting, or open-source dissemination of raw or derivative order book data. 
+
+If the AMPS project were to bundle a subset of LOBSTER data within its repository, it would constitute an immediate violation of commercial licensing agreements, resulting in severe legal liability and immediate DMCA takedown actions.
+
+\section{The "Bring Your Own Data" (BYOD) Architecture}
+
+To resolve this legal barrier while ensuring complete reproducibility, AMPS implements a \textbf{Bring Your Own Data (BYOD)} architecture. The core simulation engine -- including the ingestion parsers, Numba JIT kernels, and ECS state arrays -- is fully open-source and natively configured to parse LOBSTER's canonical two-file format: the message file (\texttt{\_message\_*.csv}) and the orderbook depth file (\texttt{\_orderbook\_*.csv}).
+
+However, the codebase ships with an empty \texttt{data/} root directory, strictly enforced via pre-commit hooks and \texttt{.gitignore} directives to prevent accidental repository commits.
+
+The researcher is solely responsible for:
+\begin{enumerate}
+    \item Obtaining their own legal licensing credentials for LOBSTER or equivalent institutional data feeds.
+    \item Downloading raw historical CSV or binary dump files to their local workstation storage.
+    \item Specifying the absolute or relative dataset path within the AMPS configuration file (\texttt{config.yaml}).
+\end{enumerate}
+
+\section{Alternative Microstructure Datasets: ITCH-Parsed and hkgsas}
+
+For researchers lacking institutional NASDAQ LOBSTER subscriptions, the BYOD engine provides modular ingestion pipelines for alternative high-frequency datasets, provided they preserve raw message-level execution semantics. Datasets containing only pre-processed, down-sampled feature matrices (such as the FI-2010 benchmark \cite{ntakaris2018benchmark}) are structurally incompatible with AMPS because they lack the discrete cancellation, submission, and execution messages necessary to reconstruct the exact internal state of the LOB matching engine.
+
+The primary alternative data sources natively supported by AMPS include:
+\begin{itemize}
+    \item \textbf{Open ITCH PCAP Parsers:} AMPS supports raw binary NASDAQ TotalView-ITCH packet captures sourced from academic archives. Built-in Rust parsers unpack ITCH 5.0 binary messages into contiguous Arrow memory buffers at wire speed.
+    \item \textbf{hkgsas/LOB Benchmark:} A massive, high-frequency limit order book dataset from Chinese equity exchanges (SSE and SZSE) \cite{hkgsas2020benchmark}, spanning billions of ticks across more than 2,000 listed equities. 
+    
+    \textit{Microstructural Invariant:} As introduced in Chapter \ref{ch:tradfi_vs_crypto}, Chinese equity markets enforce a strict T+1 settlement rule (securities purchased on day $T$ cannot be sold until day $T+1$) and impose static $\pm10\%$ daily Limit Up and Limit Down price bands (enforcing a Single-Stock Circuit Breaker halt) rather than rolling dynamic LULD circuit breaker bands \cite{sec2012luld}. When ingesting \texttt{hkgsas}, the AMPS action masking system (Chapter \ref{ch:mdp_formulation}) automatically activates these constraints.
+    \item \textbf{Optiver Realized Volatility:} High-frequency Level 2 order book snapshots capturing top-of-book market maker liquidity withdrawal dynamics and microstructural realized volatility spikes \cite{optiver2021realized}.
+\end{itemize}
+
+\section{Bypassing Pandas: Polars Multi-Threaded Rust Ingestion}
+
+Ingesting hundreds of gigabytes of raw tick-level CSV files creates a severe I/O bottleneck in traditional Python simulation frameworks. The standard Python data manipulation library, \texttt{pandas}, is fundamentally ill-suited for high-frequency microstructure: it instantiates generic boxed Python objects for each scalar, introduces massive memory overhead (often $5\times$ to $10\times$ raw file size), and triggers frequent garbage collection cycles that break execution determinism.
+
+AMPS completely eliminates \texttt{pandas} from the data pipeline, executing all raw file ingestion through \textbf{Polars}. Polars is a blazingly fast DataFrame engine implemented in Rust, natively built atop the Apache Arrow memory specification.
+
+\begin{enumerate}
+    \item \textbf{Zero-Copy Memory Alignment:} Polars streams CSV records directly into Arrow columnar buffers. Because Arrow memory layouts match the contiguous NumPy array specifications required by the ECS state tables (Chapter \ref{ch:data_oriented_design}), data transitions from disk to the Numba matching engine without memory re-allocation or serialization overhead.
+    \item \textbf{Multi-Core Parallelism \& GIL Bypass:} Polars leverages Rust's memory safety guarantees to parse multi-gigabyte files across all available CPU threads in parallel, completely bypassing the Python Global Interpreter Lock (GIL).
+\end{enumerate}
+
+Through this multi-threaded Rust ingestion engine, AMPS loads and bootstraps a full day of NASDAQ or SSE/SZSE Level 3 order book history in under 12 seconds, delivering immediate throughput to the Tier 1 harvesting loops and Tier 2 distilled swarm.

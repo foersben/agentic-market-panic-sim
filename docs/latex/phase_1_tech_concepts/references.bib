@@ -1,269 +1,342 @@
 % ==============================================================================
 % AMPS MASTER BIBTEX REFERENCE REPOSITORY
 % Complete Citation Mapping for main.pdf and Appendix C (Hardware Blueprint)
+% Canonical Academic Literature, Vendor Manuals, and Official Specifications
 % ==============================================================================
 
 % ------------------------------------------------------------------------------
 % SECTION 1: CORE DATASET REFERENCES
-% Target Location: Chapters 3.3, 4.3, 14.1, 14.3
+% Target Location: Chapters 3.3, 4.3, 14.1, 14.3, 17.1, 17.2
 % ------------------------------------------------------------------------------
 
-% Primary Target: Chapter 14.1 (The NASDAQ LOBSTER Licensing Constraint)
+% Primary Target: Chapter 14.1 & Chapter 17.1 (The NASDAQ LOBSTER Licensing Constraint)
 @article{huang2011lobster,
-  title     = {LOBSTER: Limit Order Book System--The Efficient Reconstructor},
-  author    = {Huang, Ruihong and Polak, Tomasz},
-  journal   = {SSRN Electronic Journal},
-  year      = {2011},
-  doi       = {10.2139/ssrn.1977044},
-  note      = {Baseline reference for NASDAQ TotalView-ITCH tick-by-tick order book reconstruction.}
+  title        = {LOBSTER: Limit Order Book System -- The Efficient Reconstructor},
+  author       = {Huang, Ruihong and Polak, Tomasz},
+  journal      = {SSRN Electronic Journal},
+  year         = {2011},
+  doi          = {10.2139/ssrn.1977044},
+  note         = {Baseline reference for NASDAQ TotalView-ITCH tick-by-tick order book reconstruction.}
 }
 
-% Alias for backwards compatibility
-@misc{lobsterdata,
-  title     = {LOBSTER (Limit Order Book System--The Efficient Reconstructor)},
-  author    = {{LOBSTER Data Technology \& Science Ltd}},
-  year      = {2026},
-  howpublished = {\url{https://lobsterdata.com/}}
-}
-
-% Primary Target: Chapter 4.3 (The Data Quality Imperative) & Chapter 14.3 (Alternative Datasets)
+% Primary Target: Chapter 4.3 & Chapter 17.2 (Chinese LOB Benchmark)
 @misc{hkgsas2020benchmark,
-  title     = {Benchmark Dataset of Limit Order Book in China Markets},
-  author    = {{FinAI Laboratory, Hong Kong Graduate School of Advanced Studies}},
-  year      = {2020},
-  url       = {https://github.com/hkgsas/LOB},
-  note      = {Permissively licensed (MIT) Level 2/3 Chinese equity benchmark for multi-agent market contagion.}
+  title        = {Benchmark Dataset of Limit Order Book in China Markets},
+  author       = {{FinAI Laboratory, Hong Kong Graduate School of Advanced Studies}},
+  year         = {2020},
+  howpublished = {\url{https://github.com/hkgsas/LOB}},
+  note         = {Permissively licensed (MIT) Level 2/3 Chinese equity benchmark for multi-agent market contagion.}
 }
 
-@misc{hkgsas_lob,
-  title     = {Benchmark Dataset of Limit Order Book in China Markets},
-  author    = {{FinAI Laboratory, Hong Kong Graduate School of Advanced Studies}},
-  year      = {2020},
-  howpublished = {\url{https://github.com/hkgsas/LOB}}
-}
-
-% Primary Target: Chapter 14.3 (Alternative Datasets: ITCH-Parsed and hkgsas)
-@dataset{ntakaris2018fi2010,
-  title     = {FI-2010 Benchmark Dataset},
-  author    = {Ntakaris, Adamantios and Mirone, G. and others},
-  publisher = {ETSIN},
-  year      = {2018},
-  url       = {https://etsin.fairdata.fi/dataset/73eb48d7-4dbc-4a10-a52a-da745b47a649},
-  note      = {Normalized Nasdaq Nordic L2 dataset demonstrating limits of feature-only data without message events.}
-}
-
+% Primary Target: Chapter 14.3 & Chapter 17.2 (FI-2010 Benchmark)
 @article{ntakaris2018benchmark,
-  title     = {Benchmark dataset for mid-price forecasting of limit order book data with machine learning methods},
-  author    = {Ntakaris, Adamantios and Magris, Martin and Kanniainen, Juho and Gabbouj, Moncef and Iosifidis, Alexandros},
-  journal   = {Journal of Forecasting},
-  volume    = {37},
-  number    = {8},
-  pages     = {852--866},
-  year      = {2018},
-  publisher = {Wiley Online Library}
+  title        = {Benchmark dataset for mid-price forecasting of limit order book data with machine learning methods},
+  author       = {Ntakaris, Adamantios and Magris, Martin and Kanniainen, Juho and Gabbouj, Moncef and Iosifidis, Alexandros},
+  journal      = {Journal of Forecasting},
+  volume       = {37},
+  number       = {8},
+  pages        = {852--866},
+  year         = {2018},
+  publisher    = {Wiley Online Library},
+  note         = {Normalized Nasdaq Nordic L2 benchmark demonstrating limits of feature-only data without message events.}
 }
 
-% Primary Target: Chapter 3.3 (Adverse Selection and Toxic Flow) & Chapter 14.3
-@dataset{optiver2021realized,
-  title     = {Optiver Realized Volatility Prediction},
-  author    = {{Optiver}},
-  publisher = {Kaggle},
-  year      = {2021},
-  url       = {https://www.kaggle.com/datasets/vxtnvk/optiver-volatility-models},
-  note      = {High-frequency L2 order book updates reflecting top-of-book market maker liquidity withdrawal.}
-}
-
-@misc{optiver_volatility,
-  title     = {Optiver Realized Volatility Prediction},
-  author    = {{Optiver}},
-  year      = {2021},
-  howpublished = {\url{https://www.kaggle.com/competitions/optiver-realized-volatility-prediction/data}},
-  publisher = {Kaggle}
+% Primary Target: Chapter 3.3 & Chapter 17.2 (Optiver Realized Volatility)
+@misc{optiver2021realized,
+  title        = {Optiver Realized Volatility Prediction},
+  author       = {{Optiver}},
+  howpublished = {Kaggle},
+  year         = {2021},
+  url          = {https://www.kaggle.com/datasets/vxtnvk/optiver-volatility-models},
+  note         = {High-frequency L2 order book updates reflecting top-of-book market maker liquidity withdrawal.}
 }
 
 % ------------------------------------------------------------------------------
-% SECTION 2: HIGH-PERFORMANCE SYSTEMS & HARDWARE OPTIMIZATION
-% Target Location: Chapters 5.1, 7.3, 7.4, 8.3, 11.2, 11.3, Appendix B, Appendix C
+% SECTION 2: HIGH-PERFORMANCE SYSTEMS, CPU CACHING, & HARDWARE OPTIMIZATION
+% Target Location: Chapters 5.1, 7.3, 7.4, 8.3, 11.2, 11.3, 15.2, Appendix B, Appendix C
 % ------------------------------------------------------------------------------
 
 % Primary Target: Chapter 7.3 (The Apache Arrow C Data Interface) & Section C.1.1
 @misc{apache_arrow_c_data,
-  title     = {Apache Arrow C Data Interface},
-  author    = {{Apache Software Foundation}},
-  year      = {2026},
-  url       = {https://arrow.apache.org/docs/format/CDataInterface.html},
-  note      = {Zero-copy, lock-free protocol for sharing columnar arrays across process boundaries.}
-}
-
-@misc{apache_arrow_c,
-  title     = {Apache Arrow C Data Interface},
-  author    = {{Apache Software Foundation}},
-  year      = {2020},
-  howpublished = {\url{https://arrow.apache.org/docs/format/CDataInterface.html}}
+  title        = {Apache Arrow C Data Interface},
+  author       = {{Apache Software Foundation}},
+  year         = {2026},
+  url          = {https://arrow.apache.org/docs/format/CDataInterface.html},
+  note         = {Zero-copy, lock-free protocol for sharing columnar arrays across process boundaries.}
 }
 
 % Primary Target: Chapter 11.3 (Exploiting the SSE4.2 popcnt Intrinsic) & Section C.5.1
 @misc{numba_llvmlite_builder,
-  title     = {llvmlite IR Builder},
-  author    = {{Numba Developers}},
-  year      = {2026},
-  url       = {https://github.com/numba/llvmlite},
-  note      = {Python bindings for direct LLVM IR injection of hardware-accelerated popcnt intrinsics.}
+  title        = {llvmlite IR Builder},
+  author       = {{Numba Developers}},
+  year         = {2026},
+  url          = {https://github.com/numba/llvmlite},
+  note         = {Python bindings for direct LLVM IR injection of hardware-accelerated popcnt intrinsics.}
 }
 
-% Primary Target: Chapter 8.3 (Thundering Herd Mitigation) & Section C.3.2
-@misc{colakel2026singleflight,
-  title     = {Singleflight: Smart Request Deduplication},
-  author    = {{\c{C}}olakel, Serif},
-  year      = {2026},
-  url       = {https://dev.to/serifcolakel/singleflight-smart-request-deduplication-33og},
-  note      = {Structural concurrency pattern for coalescing identical asynchronous LLM requests under load.}
+% Primary Target: Chapter 8.3 (Thundering Herd Mitigation) & Appendix B, Section C.3.2
+@misc{fitzpatrick2018singleflight,
+  title        = {Package singleflight: Duplicate Function Call Suppression Mechanism},
+  author       = {Fitzpatrick, Brad and {The Go Authors}},
+  year         = {2018},
+  howpublished = {\url{https://pkg.go.dev/golang.org/x/sync/singleflight}},
+  note         = {Canonical systems implementation of duplicate request suppression and mutex-and-promise coalescing.}
 }
 
-% Primary Target: Chapter 5.1 (Heterogeneous Core Architecture) & Section C.5.1
-@misc{intel2026gracemont,
-  title     = {AVX-512, BMI2, and Intel Raptor Lake Hardware Constraints},
-  author    = {{StackOverflow Contributors}},
-  year      = {2026},
-  url       = {https://stackoverflow.com/questions/76428057/do-all-cpus-that-support-avx2-also-support-bmi2-or-popcnt},
-  note      = {Hardware specifications regarding AVX-512 disabling on Raptor Lake and Gracemont E-Core ISA fallbacks. Note: population counting (POPCNT) is an SSE4.2/ABM scalar instruction, not a BMI2 instruction. BMI2 introduces PDEP/PEXT parallel bit deposit/extract operations. On Gracemont E-Cores, POPCNT is available via the SSE4.2 extension and executes in a single ALU clock cycle.}
+@article{vattani2015cache,
+  title        = {Optimal Probabilistic Cache Stampede Prevention},
+  author       = {Vattani, Andrea and Chierichetti, Flavio and Lowenstein, Kieran},
+  journal      = {Proceedings of the VLDB Endowment},
+  volume       = {8},
+  number       = {8},
+  pages        = {886--897},
+  year         = {2015},
+  publisher    = {VLDB Endowment},
+  note         = {Theoretical foundations for cache stampede prevention, request deduplication, and burst traffic mitigation.}
+}
+
+% Primary Target: Chapter 5.1 (Heterogeneous Core Architecture), 11.2, 15.2, & Appendix C
+@manual{intel2024optimization,
+  title        = {Intel 64 and IA-32 Architectures Optimization Reference Manual},
+  author       = {{Intel Corporation}},
+  year         = {2024},
+  organization = {Intel Corporation},
+  number       = {248966-051},
+  note         = {Authoritative reference for Hybrid Architecture, Gracemont efficiency cluster topology, L2 cache boundaries, and vector ISA constraints.}
+}
+
+% Primary Target: Chapter 7.4 (Cache Coherence, False Sharing, 64-byte Padding) & Section C.4.1
+@techreport{drepper2007memory,
+  title        = {What Every Programmer Should Know About Memory},
+  author       = {Drepper, Ulrich},
+  institution  = {Red Hat, Inc.},
+  year         = {2007},
+  note         = {Canonical reference for CPU cache hierarchies, MESI cache coherence protocols, 64-byte cache line alignment, and TLB page-table overhead.}
 }
 
 % Primary Target: Chapter 7.4 (Lock-Free Ring Buffers) & Section C.4.1
-@misc{calderon2026ipc,
-  title     = {Beyond FFI: Zero-copy IPC with Rust and Lock-free Ring-buffers},
-  author    = {Calderon, Rafa},
-  year      = {2026},
-  url       = {https://dev.to/rafacalderon/beyond-ffi-zero-copy-ipc-with-rust-and-lock-free-ring-buffers-3kcp},
-  note      = {Zero-copy IPC implementation utilizing cache line padding to prevent MESI cache bouncing.}
+@article{thompson2011disruptor,
+  title        = {Disruptor: High Performance Alternative to Bounded Queues for Sharing Data Between Threads},
+  author       = {Thompson, Martin and Farley, Dave and Barker, Michael and Gee, Patricia and Stewart, Andrew},
+  journal      = {LMAX White Paper},
+  year         = {2011},
+  note         = {Foundational quantitative finance architecture for lock-free ring buffers, cache line padding, and mechanical sympathy.}
 }
 
 @misc{selivanov2016uvloop,
-  author    = {Selivanov, Yury},
-  title     = {uvloop: Ultra fast asyncio event loop},
-  year      = {2016},
-  publisher = {GitHub},
+  title        = {uvloop: Ultra fast asyncio event loop},
+  author       = {Selivanov, Yury},
+  year         = {2016},
   howpublished = {\url{https://github.com/MagicStack/uvloop}}
 }
 
 % ------------------------------------------------------------------------------
-% SECTION 3: ALGORITHMIC & MATHEMATICAL METHODS
-% Target Location: Chapters 10.2, 13.2, 13.3, Section C.4.2, Section C.5.1
+% SECTION 3: ECONOMETRIC VALIDATION & NON-PARAMETRIC CAUSAL MODELING
+% Target Location: Chapter 16 (Non-Parametric Validation), Chapter 10.2, Section C.4.2
 % ------------------------------------------------------------------------------
 
-% Primary Target: Chapter 13.2 (Kernel Ridge Regression)
-@article{li2025diagonal,
-  title     = {A Diagonal Adaptive Kernel Model for Non-stationary Regression},
-  author    = {Li, Yicheng and Lin, Qian},
-  journal   = {arXiv preprint arXiv:2501.08679},
-  year      = {2025},
-  note      = {Non-parametric kernel ridge regression for dynamic eigenvalue learning in LOB environments.}
+% Primary Target: Chapter 16.2 (Foundational NPIV Econometric Reference)
+@article{newey2003instrumental,
+  title        = {Instrumental Variable Estimation of Nonparametric Models},
+  author       = {Newey, Whitney K and Powell, James L},
+  journal      = {Econometrica},
+  volume       = {71},
+  number       = {5},
+  pages        = {1565--1578},
+  year         = {2003},
+  publisher    = {Wiley Online Library},
+  note         = {Seminal foundation for non-parametric instrumental variable regression and ill-posed inverse problems using conditional moment restrictions.}
 }
 
-% Primary Target: Chapter 13.3 (Non-Parametric Instrumental Variables) & Section C.4.2
-@article{mingdu2024npiv,
-  title     = {Nonparametric Instrumental Variable Estimation under Misspecification},
-  author    = {{Mingdu Technology} and {Yale University} and {University College London}},
-  journal   = {arXiv preprint arXiv:2411.19653},
-  year      = {2024},
-  note      = {Spectral regularization methods for NPIV estimation isolating causal shocks from spread feedback.}
+% Primary Target: Chapter 16.2 (Kernel Instrumental Variable Formulation & Tikhonov Regularization)
+@inproceedings{singh2019kernel,
+  title        = {Kernel Instrumental Variable Regression},
+  author       = {Singh, Rahul and Sahani, Maneesh and Gretton, Arthur},
+  booktitle    = {Advances in Neural Information Processing Systems},
+  volume       = {32},
+  pages        = {4593--4605},
+  year         = {2019},
+  note         = {Non-linear causal identification via kernel ridge regression and Tikhonov spectral regularization in RKHS.}
+}
+
+% Primary Target: Chapter 16.2 (Minimax Optimal Kernel NPIV Rates - Authentic arXiv:2411.19653)
+@article{meunier2024minimax,
+  title        = {Nonparametric Instrumental Regression via Kernel Methods is Minimax Optimal},
+  author       = {Meunier, Dimitri and Li, Zhu and Christensen, Tim and Gretton, Arthur},
+  journal      = {arXiv preprint arXiv:2411.19653},
+  year         = {2024},
+  note         = {Minimax optimal convergence rates for kernel-based non-parametric instrumental regression under ill-posed inverse operators.}
+}
+
+% Primary Target: Chapter 16.3 (Reproducing Kernel Hilbert Spaces & Regularization Foundations)
+@book{scholkopf2002learning,
+  title        = {Learning with Kernels: Support Vector Machines, Regularization, Optimization, and Beyond},
+  author       = {Sch{\"o}lkopf, Bernhard and Smola, Alexander J},
+  year         = {2002},
+  publisher    = {MIT Press},
+  note         = {Comprehensive foundation for reproducing kernel Hilbert spaces, regularization theory, and kernel operator methods.}
+}
+
+% Primary Target: Chapter 16.3 (Multi-Kernel & Adaptive Vector-Valued Functions)
+@article{micchelli2005learning,
+  title        = {On Learning Vector-Valued Functions},
+  author       = {Micchelli, Charles A and Pontil, Massimiliano},
+  journal      = {Neural Computation},
+  volume       = {17},
+  number       = {1},
+  pages        = {177--204},
+  year         = {2005},
+  publisher    = {MIT Press},
+  note         = {Theoretical framework for matrix-valued kernels and multi-output regularized feature learning.}
+}
+
+% Primary Target: Chapter 16.3 (Adaptive Feature Weighting in RKHS - Authentic arXiv:2501.08679)
+@article{li2025diagonal,
+  title        = {Diagonal Over-parameterization in Reproducing Kernel Hilbert Spaces as an Adaptive Feature Model: Generalization and Adaptivity},
+  author       = {Li, Yicheng and Lin, Qian},
+  journal      = {arXiv preprint arXiv:2501.08679},
+  year         = {2025},
+  note         = {Adaptive diagonal metric feature weighting in RKHS for non-stationary dynamic regimes.}
 }
 
 % Primary Target: Chapter 10.2 (Matryoshka Representation Learning) & Section C.5.1
 @inproceedings{kusupati2022matryoshka,
-  title     = {Matryoshka Representation Learning},
-  author    = {Kusupati, Aditya and Bhatt, Gantavya and Rege, Aniket and Wallingford, Matthew and Sinha, Aditya and Ramanujan, Vivek and Howard, William and Borghesani, Kevin and Farhadi, Ali and Kakade, Sham and others},
-  booktitle = {Advances in Neural Information Processing Systems},
-  volume    = {35},
-  pages     = {30233--30249},
-  year      = {2022},
-  url       = {https://neurips.cc/virtual/2022/session/64302},
-  note      = {Nested representation technique enabling truncation of 1024D embeddings to 128D binary vectors.}
+  title        = {Matryoshka Representation Learning},
+  author       = {Kusupati, Aditya and Bhatt, Gantavya and Rege, Aniket and Wallingford, Matthew and Sinha, Aditya and Ramanujan, Vivek and Howard, William and Borghesani, Kevin and Farhadi, Ali and Kakade, Sham and others},
+  booktitle    = {Advances in Neural Information Processing Systems},
+  volume       = {35},
+  pages        = {30233--30249},
+  year         = {2022},
+  url          = {https://neurips.cc/virtual/2022/session/64302},
+  note         = {Nested representation technique enabling truncation of 1024D embeddings to 128D binary vectors.}
 }
 
 @inproceedings{chen2021finqa,
-  title     = {FinQA: A Dataset of Numerical Reasoning over Financial Data},
-  author    = {Chen, Zhiyu and Chen, Wenhu and Smiley, Charese and Shah, Sameena and Borova, Iana and Langdon, Dylan and Moussa, Reema and Beane, Matt and Huang, Ting-Hao and Routledge, Bryan R and others},
-  booktitle = {Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing},
-  pages     = {3697--3711},
-  year      = {2021}
+  title        = {FinQA: A Dataset of Numerical Reasoning over Financial Data},
+  author       = {Chen, Zhiyu and Chen, Wenhu and Smiley, Charese and Shah, Sameena and Borova, Iana and Langdon, Dylan and Moussa, Reema and Beane, Matt and Huang, Ting-Hao and Routledge, Bryan R and others},
+  booktitle    = {Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing},
+  pages        = {3697--3711},
+  year         = {2021}
 }
 
 % ------------------------------------------------------------------------------
-% SECTION 4: SUPPLEMENTAL THEORETICAL PLACEHOLDERS
-% Target Location: Chapters 3.3.1, 3.4, 9.1, 10.4, 15.3, Section C.1.2
+% SECTION 4: MARKET MICROSTRUCTURE, REINFORCEMENT LEARNING, & AGENT SWARMS
+% Target Location: Chapters 1.2, 2.1, 3.3, 3.4, 9.1, 10.4, 13.3, 15.3, Section C.1.2
 % ------------------------------------------------------------------------------
 
 % Foundational Microstructure
 @book{ohara1995market,
-  title     = {Market Microstructure Theory},
-  author    = {O'Hara, Maureen},
-  year      = {1995},
-  publisher = {Blackwell Publishers}
+  title        = {Market Microstructure Theory},
+  author       = {O'Hara, Maureen},
+  year         = {1995},
+  publisher    = {Blackwell Publishers},
+  note         = {Classic treatise establishing inventory and information models in limit order book markets.}
 }
 
 % Primary Target: Chapter 3.3.1 (The Glosten-Milgrom Formulation)
 @article{glosten1985bid,
-  title     = {Bid, Ask and Transaction Prices in a Specialist Market with Heterogeneously Informed Traders},
-  author    = {Glosten, Lawrence R and Milgrom, Paul R},
-  journal   = {Journal of Financial Economics},
-  volume    = {14},
-  number    = {1},
-  pages     = {71--100},
-  year      = {1985},
-  publisher = {Elsevier},
-  note      = {Theoretical foundation for Bayesian spread widening and adverse selection under toxic flow.}
+  title        = {Bid, Ask and Transaction Prices in a Specialist Market with Heterogeneously Informed Traders},
+  author       = {Glosten, Lawrence R and Milgrom, Paul R},
+  journal      = {Journal of Financial Economics},
+  volume       = {14},
+  number       = {1},
+  pages        = {71--100},
+  year         = {1985},
+  publisher    = {Elsevier},
+  note         = {Theoretical foundation for Bayesian spread widening and adverse selection under toxic flow.}
 }
 
-% Primary Target: Chapter 3.4 (LULD Circuit Breakers) & Chapter 19.2
+% Primary Target: Chapter 3.4 (LULD Circuit Breakers) & Chapter 17.2
 @techreport{sec2012luld,
-  title     = {National Market System Plan to Address Extraordinary Market Volatility (Limit Up-Limit Down)},
-  author    = {{U.S. Securities and Exchange Commission}},
-  institution = {SEC Releases},
-  year      = {2012},
-  note      = {Regulatory specifications for mandatory volatility bands and trading halts in equity markets.}
+  title        = {National Market System Plan to Address Extraordinary Market Volatility (Limit Up-Limit Down)},
+  author       = {{U.S. Securities and Exchange Commission}},
+  institution  = {SEC Releases},
+  year         = {2012},
+  note         = {Regulatory specifications for mandatory volatility bands and trading halts in equity markets.}
 }
 
 % Primary Target: Chapter 10.4 (Ternary Weight Quantization) & Section C.2.1
+% Authentic metadata: arXiv:2402.17764 with verified author list
 @article{ma2024bitnet,
-  title     = {The Era of 1-bit LLMs: All Large Language Models Are in 1.58 Bits},
-  author    = {Ma, Shuming and Wang, Hongyu and Ma, Lingxiao and Wang, Lei and Wang, Yan and Li, Shaohan and Huang, Huaijie and Zhang, Jilong and Wei, Furu},
-  journal   = {arXiv preprint arXiv:2402.17763},
-  year      = {2024},
-  note      = {1.58-bit ternary weight quantization reducing local agent memory footprints to fit host VRAM.}
+  title        = {The Era of 1-bit LLMs: All Large Language Models Are in 1.58 Bits},
+  author       = {Ma, Shuming and Wang, Hongyu and Ma, Lingxiao and Wang, Lei and Wang, Wenhui and Huang, Shaohan and Dong, Li and Wang, Ruiping and Xue, Jilong and Wei, Furu},
+  journal      = {arXiv preprint arXiv:2402.17764},
+  year         = {2024},
+  note         = {1.58-bit ternary weight quantization reducing local agent memory footprints to fit host VRAM.}
 }
 
-@article{ma2024era,
-  title     = {The era of 1-bit llms: All large language models are in 1.58 bits},
-  author    = {Ma, Shuming and Wang, Hongyu and Ma, Lingxiao and Wang, Lei and Wang, Wenhui and Huang, Shaohan and Dong, Li and Wang, Ruiping and Xue, Jilong and Wei, Furu},
-  journal   = {arXiv preprint arXiv:2402.17764},
-  year      = {2024}
-}
-
-% Primary Target: Chapter 9.1 (The 671B Macro Orchestrator)
+% Primary Target: Chapter 9.1 (Generative Agent Swarms)
 @inproceedings{park2023generative,
-  title     = {Generative Agents: Interactive Simulacra of Human Behavior},
-  author    = {Park, Joon Sung and O'Brien, Joseph C and Cai, Carrie J and Morris, Meredith Ringel and Liang, Percy and Bernstein, Michael S},
-  booktitle = {Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology},
-  pages     = {1--22},
-  year      = {2023},
-  note      = {Generative multi-agent architecture establishing behavioral synthesis and agent memory loops.}
+  title        = {Generative Agents: Interactive Simulacra of Human Behavior},
+  author       = {Park, Joon Sung and O'Brien, Joseph C and Cai, Carrie J and Morris, Meredith Ringel and Liang, Percy and Bernstein, Michael S},
+  booktitle    = {Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology},
+  pages        = {1--22},
+  year         = {2023},
+  note         = {Generative multi-agent architecture establishing behavioral synthesis and agent memory loops.}
 }
 
 % Primary Target: Section C.1.2 (P/E-Core NUMA Pinning & Thread Isolation)
 @misc{corbet2019cgroups,
-  title     = {Control Groups v2 Documentation},
-  author    = {Corbet, Jonathan and Kernel Development Community},
-  year      = {2019},
-  url       = {https://www.kernel.org/doc/Documentation/cgroup-v2.txt},
-  note      = {Linux kernel mechanisms for hardware resource isolation, CPU set pinning, and thread affinity.}
+  title        = {Control Groups v2 Documentation},
+  author       = {Corbet, Jonathan and {Kernel Development Community}},
+  year         = {2019},
+  url          = {https://www.kernel.org/doc/Documentation/cgroup-v2.txt},
+  note         = {Linux kernel mechanisms for hardware resource isolation, CPU set pinning, and thread affinity.}
 }
 
-% Primary Target: Chapter 15.3 (Zarr Telemetry Buffers)
+% Primary Target: Chapter 14.2 & Chapter 18.2 (Zarr Telemetry Buffers)
 @misc{zarr2023dev,
-  title     = {Zarr Storage Format Specification Version 3.0},
-  author    = {{Zarr Core Development Team}},
-  year      = {2023},
-  url       = {https://zarr.readthedocs.io/},
-  note      = {Chunked, compressed N-dimensional array storage protocol for immutable simulation telemetry.}
+  title        = {Zarr Storage Format Specification Version 3.0},
+  author       = {{Zarr Core Development Team}},
+  year         = {2023},
+  url          = {https://zarr.readthedocs.io/},
+  note         = {Chunked, compressed N-dimensional array storage protocol for immutable simulation telemetry.}
+}
+
+% Primary Target: Chapter 18.4 & Chapter 20 (FINOS Perspective Streaming Analytics)
+@misc{finos_perspective,
+  title        = {Perspective: Streaming WebAssembly Data Grid and Visualization Engine},
+  author       = {{FINOS (Fintech Open Source Foundation)}},
+  year         = {2024},
+  url          = {https://github.com/perspective-dev/perspective},
+  note         = {Open-source streaming data engine and WebAssembly visualization architecture for high-frequency financial telemetry.}
+}
+
+% Primary Target: Chapter 18.4 (Multimodal Time-Series Visualization)
+@misc{rerun_io,
+  title        = {Rerun: An Open Source SDK for Visualizing Multimodal Data Streams Across Time},
+  author       = {{Rerun Technologies}},
+  year         = {2024},
+  url          = {https://rerun.io},
+  note         = {High-performance visualizer for recorded spatial and temporal multimodal time-series telemetry.}
+}
+
+% Primary Target: Chapter 13.3 (Multi-Objective PPO Reward Calibration)
+@article{schulman2017proximal,
+  title        = {Proximal Policy Optimization Algorithms},
+  author       = {Schulman, John and Wolski, Filip and Dhariwal, Prafulla and Radford, Alec and Klimov, Oleg},
+  journal      = {arXiv preprint arXiv:1707.06347},
+  year         = {2017},
+  note         = {Foundational policy gradient reinforcement learning algorithm utilized for offline student distillation.}
+}
+
+% Primary Target: Chapter 1.2 (Bounded Rationality & Loss Aversion)
+@article{kahneman1979prospect,
+  title        = {Prospect Theory: An Analysis of Decision under Risk},
+  author       = {Kahneman, Daniel and Tversky, Amos},
+  journal      = {Econometrica},
+  volume       = {47},
+  number       = {2},
+  pages        = {263--291},
+  year         = {1979},
+  note         = {Empirical foundation for asymmetric loss aversion and behavioral decision weighting under risk.}
+}
+
+% Primary Target: Chapter 15 & Appendix A (Microstructure & Algorithmic Trading)
+@book{cartea2015algorithmic,
+  title        = {Algorithmic and High-Frequency Trading},
+  author       = {Cartea, {\'A}lvaro and Jaimungal, Sebastian and Penalva, Jos{\'e}},
+  year         = {2015},
+  publisher    = {Cambridge University Press},
+  note         = {Microstructural foundations for price-time priority, optimal execution, and inventory control.}
 }

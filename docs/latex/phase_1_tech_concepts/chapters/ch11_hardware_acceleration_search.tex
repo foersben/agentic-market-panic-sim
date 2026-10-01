@@ -7,7 +7,7 @@ Having compressed the semantic state of the market into a 128-bit binary signatu
 
 When comparing two dense floating-point vectors, mathematics dictates the use of Cosine Similarity or Euclidean Distance. These operations require floating-point subtraction, multiplication, and accumulation, which consume dozens of clock cycles per dimension.
 
-When comparing two \textit{binary vectors} (strings of 1s and 0s), we utilize the \textbf{Hamming Distance}--a measure of exactly how many bits differ between the two strings.
+When comparing two \textit{binary vectors} (strings of 1s and 0s), we utilize the \textbf{Hamming Distance} -- a measure of exactly how many bits differ between the two strings.
 
 Calculating Hamming Distance in a CPU is incredibly elegant. It requires two distinct steps:
 \begin{enumerate}
@@ -21,7 +21,7 @@ In an ideal hardware environment, calculating the popcount of massive binary arr
 
 However, AMPS is explicitly designed to run on the Intel Core i7-14700K. As discussed in Chapter 5, the 14700K utilizes a heterogeneous architecture combining Raptor Cove P-Cores and Gracemont E-Cores. While the massive P-Cores were physically designed to support AVX-512, Intel physically fused off (disabled) AVX-512 support across the entire die to ensure instruction-set parity with the Gracemont E-Cores (which are physically too small to house AVX-512 silicon).
 
-Therefore, any software attempting to call AVX-512 instructions (such as standard implementations of the FAISS vector database) will instantly crash with an \texttt{Illegal Instruction} error \cite{intel2026gracemont}.
+Therefore, any software attempting to call AVX-512 instructions (such as standard implementations of the FAISS vector database) will instantly crash with an \texttt{Illegal Instruction} error \cite{intel2024optimization}.
 
 \section{Exploiting the SSE4.2 \texttt{popcnt} Intrinsic}
 

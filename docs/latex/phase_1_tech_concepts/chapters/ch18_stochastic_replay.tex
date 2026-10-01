@@ -1,0 +1,67 @@
+\chapter{Stochastic Replay, Double Buffering \& Zarr Telemetry Buffers}
+\label{ch:stochastic_replay}
+
+A major engineering challenge in multi-agent financial simulation lies in debugging and empirical reproducibility. When a systemic liquidity collapse occurs at tick 45,000 driven by the emergent feedback of 1,000,000 distilled student policies interacting with macroeconomic shocks, reproducing that exact microstructural cascade to diagnose an invariant failure or engine anomaly is notoriously difficult. Stochastic variance in simulated communications, network packet jitter, and asynchronous event arrivals can cause identical simulation runs to diverge. 
+
+This chapter details the architectural mechanisms -- strict ECS double buffering, PRNG isolation, and chunked Zarr replay buffers -- enforced by the AMPS engine to guarantee bitwise deterministic replay.
+
+\section{The Non-Determinism Dilemma in Multi-Agent Simulation}
+
+Even when pseudo-random number generator (PRNG) seeds are fixed, high-concurrency simulation loops are prone to non-determinism. At the scale of 1,000,000 concurrent agents, subtle variations in thread scheduling, asynchronous callback order in the event loop, or floating-point rounding across SIMD instruction pipelines can alter an agent's marginal order volume.
+
+In an ultra-dense Limit Order Book operating under price-time priority, a single-tick discrepancy in order arrival time can alter top-of-book depth, triggering a different sequence of fills. This microstructural "Butterfly Effect" quickly compounds, causing two ostensibly identical simulations to diverge completely within milliseconds. 
+
+\section{Double Buffering and State Immutability}
+
+To eliminate race conditions and ensure causal determinism across both Tier 1 generative loops and Tier 2 distilled swarms, AMPS enforces a strict \textbf{Double Buffering} architecture within all ECS component arrays, borrowing principles from high-performance graphics engines:
+
+During any discrete simulation tick $T$:
+\begin{enumerate}
+    \item \textbf{Read Layer ($\mathcal{S}_{\text{read}}$):} All Numba JIT systems, LOB matching logic, and agent policy evaluation kernels read the state of the market exclusively from an immutable, locked Read Buffer. No system or agent thread is permitted to mutate any element in $\mathcal{S}_{\text{read}}$.
+    \item \textbf{Write Layer ($\mathcal{S}_{\text{write}}$):} All state transitions, newly generated limit orders, executed trade fills, and updated agent cash/inventory positions are written exclusively to a pre-allocated Write Buffer.
+\end{enumerate}
+
+At the boundary of tick $T$, after all systems have completed their evaluation passes, an atomic pointer swap executes: the Write Buffer becomes the new immutable Read Buffer for tick $T+1$, while the old Read Buffer is cleared to receive future updates:
+
+\begin{equation}
+    \text{swap}(\mathcal{S}_{\text{read}}, \, \mathcal{S}_{\text{write}}) \implies \mathcal{S}_{\text{read}}^{(T+1)} \leftarrow \mathcal{S}_{\text{write}}^{(T)}
+\end{equation}
+
+This double-buffering invariant guarantees that within tick $T$, the execution order of individual agents cannot alter the market state perceived by peer agents executing concurrently, completely eliminating intra-tick race conditions.
+
+\section{Zarr Telemetry Buffers}
+
+Because the Write Buffer captures the absolute, final, immutable state of the entire simulation world at the conclusion of each tick, AMPS streams this buffer directly to non-volatile storage without requiring data transformation.
+
+Rather than persisting to relational databases or JSON serialization streams -- which introduce prohibitive I/O overhead and memory allocation spikes -- AMPS streams telemetry into \textbf{Zarr} \cite{zarr2023dev}. Zarr is a high-performance, compressed, chunked, N-dimensional array storage specification designed specifically for massive numerical datasets.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    box/.style={draw, rectangle, rounded corners, fill=blue!10, minimum width=3.2cm, minimum height=1cm, align=center},
+    db/.style={draw, cylinder, shape border rotate=90, aspect=0.2, fill=orange!20, minimum width=2.5cm, minimum height=1.5cm, align=center},
+    arr/.style={->, thick, >=stealth}
+]
+    \node[box] (agents) {1,000,000 Distilled Agents\\\& Numba Matching};
+    \node[box, fill=green!10] (write) [right=1.8cm of agents] {Tick $T$ Write Buffer\\(Contiguous Arrays)};
+    \node[db] (zarr) [right=1.8cm of write] {Zarr Disk Store\\(Chunked Telemetry)};
+    \node[box, fill=red!10] (replay) [below=1.5cm of zarr] {Telemetry Replay\\\& Dashboard};
+
+    \draw[arr] (agents) -- node[above] {\footnotesize Mutates} (write);
+    \draw[arr] (write) -- node[above] {\footnotesize Streams} (zarr);
+    \draw[arr] (zarr) -- node[right] {\footnotesize Bypasses Engine} (replay);
+\end{tikzpicture}
+\caption{The telemetry capture and replay pipeline. Immutable tick states are streamed to Zarr chunked arrays. Replay and econometric auditing bypass all engine matching logic, reading directly from disk-backed matrices.}
+\label{fig:zarr_pipeline}
+\end{figure}
+
+Because the ECS state tables are formatted as dense, contiguous NumPy arrays (Chapter \ref{ch:data_oriented_design}), streaming to Zarr executes via zero-copy buffer views. Telemetry chunks are compressed asynchronously in background I/O threads using the Blosc compressor (with Zstandard and byte-shuffle filters), achieving a $4\times$ to $6\times$ compression ratio without taxing the Gracemont E-core matching pipeline.
+
+\section{Engine Bypass for Deterministic Replay}
+
+A foundational mandate of the AMPS architecture is that \textbf{Playback must read historical Zarr matrices directly, bypassing all engine loop logic entirely.}
+
+When a quantitative researcher or regulator analyzes a systemic flash crash occurring at tick 45,000, the analysis tool or dashboard loads the historical Zarr chunks directly. The replay harness does not re-initialize the Numba JIT matching engine, does not evaluate the MLP policy swarm, and does not query the Tier 1 Macro Orchestrator. It merely reads and feeds the recorded historical Zarr chunks -- which are structured as chunked Apache Arrow arrays -- directly into the FINOS Perspective viewer (or a dedicated multimodal time-series visualizer like Rerun.io \cite{finos_perspective, rerun_io}), allowing researchers to scrub through exact microsecond historical states without custom rendering logic.
+
+This decoupling guarantees bitwise, pixel-perfect deterministic replay. Researchers can scrub backward and forward through the timeline at arbitrary speed, inspecting exact bid/ask depth distributions, Order Flow Imbalances, and individual agent inventory trajectories at the precise microsecond the panic unfolded.

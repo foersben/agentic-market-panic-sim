@@ -1,0 +1,93 @@
+\chapter{Multi-Patch Trajectory Dataset Assembly Across Scenario Patches}
+\label{ch:multi_patch_harvesting}
+
+Training the Tier 2 student policy swarm to generalize across extreme macroeconomic volatility requires a rich, diversified corpus of high-frequency behavioral data. Rather than relying on naive random exploration or historical market data alone, AMPS employs the Tier 1 Generative Teacher Swarm as an offline trajectory generator. By sweeping across curated market stress scenarios -- termed \textbf{Scenario Patches} -- the simulation harvests high-resolution state-action-reward tuples without generating serialization bottlenecks.
+
+This chapter details the multi-patch harvesting pipeline, the zero-copy Apache Arrow trajectory record batch schema, and the four foundational stress regimes that populate the distillation buffer.
+
+\section{The Scenario Patch Architecture}
+
+A Scenario Patch represents an isolated macroeconomic stress configuration parameterized by the 671B Macro Orchestrator God Agent, the initial Limit Order Book depth profile, and the psychological distribution of the 400 generative micro-agents. 
+
+By executing the Tier 1 swarm across these patches, AMPS captures the full spectrum of emergent microstructural phenomena, ranging from informational adverse selection to purely mechanical order-flow anomalies. Table \ref{tab:scenario_patch_matrix} outlines the four foundational scenario patches.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{p{3.2cm} p{3.2cm} p{3.6cm} X}
+\toprule
+\textbf{Scenario Patch} & \textbf{Microstructure Trigger} & \textbf{Key Feature Signature} & \textbf{Target Student Response} \\
+\midrule
+1. Lehman Liquidity Black Hole & Exogenous macro shock; toxic flow spike ($\mu \to 1$). & Extreme OFI skew; Spread $S \to \infty$; bid liquidity voiding. & Market makers cancel bids; agents execute defensive spread widening. \\
+2. Short Squeeze Flash Rally & Concentrated buy-side sweep depleting Ask depth. & Positive OFI skew; LULD band limit testing; slippage spikes. & Momentum agents submit aggressive buys; AMMs ratchet asks upward. \\
+3. Fat-Finger Price Anomaly & Massive non-informational market sell order across L2. & Instantaneous V-shaped dislocation; depth absorption. & Passive AMMs absorb transient flow; arbitragers exploit mean-reversion. \\
+4. Chinese Equity ($hkgsas$) & $T+1$ settlement enforcement; $\pm 10\%$ daily price bands. & Action masking on intraday sells; bounds at Limit Up / Limit Down price bands. & Micro-agents suppress $T+0$ scalping; volume clamped at LULD limits. \\
+\bottomrule
+\end{tabularx}
+\caption{Scenario patch harvesting matrix detailing triggers, microstructural signatures, and student objectives.}
+\label{tab:scenario_patch_matrix}
+\end{table}
+
+\section{Zero-Copy Trajectory Record Batch Schema}
+
+Logging millions of high-dimensional state transitions every second would rapidly trigger Python garbage collection pauses if handled via traditional object serialization (e.g., JSON or Pickle). To guarantee zero-copy performance, trajectory streams are formatted directly as Apache Arrow Record Batches using the Arrow C Data Interface \cite{apache_arrow_c_data}:
+\begin{itemize}
+    \item \textbf{State Array (\texttt{state\_t}):} Fixed-width float32 tensor of shape $(N, 151)$ capturing the normalized state vector $S_t$.
+    \item \textbf{Action Array (\texttt{action\_t}):} Int32 tensor of shape $(N, 3)$ capturing the discrete action tuple $(\text{action}_t, \Delta P_t, V_t)$.
+    \item \textbf{Reward Array (\texttt{reward\_t}):} Float32 scalar tensor capturing the calibrated reward $R_t$.
+    \item \textbf{Next State Array (\texttt{next\_state\_t}):} Fixed-width float32 tensor of shape $(N, 151)$ capturing $S_{t+1}$.
+    \item \textbf{Action Mask Array (\texttt{mask\_t}):} Boolean bitmask vector enforcing regulatory rules (e.g., $T+1$ constraints).
+    \item \textbf{Teacher Probabilities (\texttt{teacher\_prob}):} Float32 distribution vector $P_{\text{LLM}}(a \mid S_t)$ over action space $\mathcal{A}$, required to compute the KL-divergence anchor during PPO optimization.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.84, transform shape,
+    patch/.style={draw=blue!75!black, rectangle, rounded corners=4pt, fill=blue!10, minimum width=2.65cm, minimum height=1.1cm, align=center, font=\scriptsize\bfseries},
+    shm/.style={draw=orange!80!black, rectangle, rounded corners=5pt, fill=yellow!15, minimum width=12.2cm, minimum height=1.25cm, align=center, font=\small, line width=0.9pt},
+    store/.style={draw=green!70!black, rectangle, rounded corners=4pt, fill=green!15, minimum width=5.7cm, minimum height=1.25cm, align=center, font=\small},
+    ppo/.style={draw=purple!70!black, rectangle, rounded corners=4pt, fill=purple!12, minimum width=5.7cm, minimum height=1.25cm, align=center, font=\small},
+    arr/.style={-{Stealth[scale=0.95]}, thick, draw=black!75}
+]
+    % Row 1: 4 Scenario Patches
+    \node[patch] (p1) at (0.3, 3.2) {Lehman Shock\\($\mu \to 1$)};
+    \node[patch] (p2) at (3.3, 3.2) {Short Squeeze\\(LULD Testing)};
+    \node[patch] (p3) at (6.3, 3.2) {Fat-Finger\\(V-Dislocation)};
+    \node[patch] (p4) at (9.3, 3.2) {Chinese Equity\\($T+1$ Masking)};
+
+    % Row 2: POSIX Shared Memory Ring Buffer
+    \node[shm] (bus) at (4.8, 1.2) {
+        \textbf{POSIX Shared Memory Ring Buffer (\texttt{/dev/shm})}\\[2pt]
+        \footnotesize Zero-Copy Streaming $\cdot$ Apache Arrow C Data Interface Record Batches
+    };
+
+    % Row 3: Dual Consumers (Disk Store & Training Engine)
+    \node[store] (disk) at (1.8, -0.9) {
+        \textbf{Disk-Backed Zarr Store}\\[2pt]
+        \scriptsize Chunked Telemetry $\cdot$ Blosc LZ4
+    };
+    \node[ppo] (train) at (7.8, -0.9) {
+        \textbf{Offline PPO Training Engine}\\[2pt]
+        \scriptsize Multi-Objective Reward Calibration $\cdot$ GPU Streaming
+    };
+
+    % Arrows from Patches to SHM Bus
+    \draw[arr] (p1.south) -- (p1.south |- bus.north);
+    \draw[arr] (p2.south) -- (p2.south |- bus.north);
+    \draw[arr] (p3.south) -- (p3.south |- bus.north);
+    \draw[arr] (p4.south) -- (p4.south |- bus.north);
+
+    % Arrows from SHM Bus to Consumers
+    \draw[arr] (bus.south -| disk.north) -- node[right, font=\tiny\bfseries] {Persist} (disk.north);
+    \draw[arr] (bus.south -| train.north) -- node[right, font=\tiny\bfseries] {Stream} (train.north);
+\end{tikzpicture}
+\caption{The Multi-Patch Trajectory Harvesting Pipeline. Four scenario patches execute in parallel, streaming zero-copy Arrow batches through POSIX shared memory into Zarr storage and the offline PPO training loop.}
+\label{fig:multi_patch_harvesting_pipeline}
+\end{figure}
+
+\section{Streaming into Disk-Backed Zarr Stores}
+
+Arrow record batches traversing the lock-free ring buffer in \texttt{/dev/shm} are concurrently persisted to disk-backed Zarr archives \cite{zarr2023dev}. By employing Blosc LZ4 compression across time-chunked array partitions, AMPS records millions of transitions per minute with minimal disk I/O overhead.
+
+During offline PPO training, data loaders stream these Zarr array chunks directly into pinned GPU memory buffers, bypassing Python object instantiations and maintaining maximum training throughput for the student policy swarm.

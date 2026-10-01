@@ -1,41 +1,64 @@
-\chapter{Technical Hardware Optimization Blueprint}
+\chapter{Consolidated Hardware Optimization Matrix \& Workstation Memory Budgets}
 \label{ch:hardware_optimization_blueprint}
+\label{app:hardware_blueprint}
 
-Executing a high-resolution economic simulation involving 400 generative AI micro-agents interacting alongside a sub-millisecond, 1,000 Ticks Per Second (TPS) Limit Order Book (LOB) matching engine presents severe hardware bottlenecks when deployed on consumer-grade workstation silicon. Achieving deterministic throughput without triggering resource starvation demands a pre-allocated hardware budget and static physical memory partitioning. On a standard fixed workstation equipped with an Intel Core i7-14700K CPU, 128GB of system DDR5 RAM, and an NVIDIA RTX 5070 Ti GPU (16GB VRAM), unmanaged dynamic memory allocation rapidly leads to severe system degradation. To eliminate memory allocation collisions, avoid serialization overhead, and guarantee fixed microsecond latency bounds, physical resources must be mapped directly to dedicated execution roles within the Agentic Market Panic Simulator (AMPS).
+Executing a high-resolution economic simulation involving Tier 1 generative AI teacher swarms alongside a 1,000,000-agent Tier 2 distilled policy swarm and a sub-microsecond, 100,000+ Ticks Per Second (TPS) Limit Order Book (LOB) matching engine presents severe hardware bottlenecks when deployed on consumer-grade workstation silicon. Achieving deterministic throughput without triggering resource starvation demands a pre-allocated hardware budget and static physical memory partitioning. On a standard fixed workstation equipped with an Intel Core i7-14700K CPU, 128GB of system DDR5 RAM, and an NVIDIA RTX 5070 Ti GPU (16GB VRAM), unmanaged dynamic memory allocation rapidly leads to severe system degradation. To eliminate memory allocation collisions, avoid serialization overhead, and guarantee sub-0.2 microsecond policy evaluation bounds, physical resources must be mapped directly to dedicated execution roles within the Agentic Market Panic Simulator (AMPS).
 
 \section{Workstation Topography \& Core Memory Alignment}
 
-\subsection{Baseline Hardware State \& Memory Budget Allocation}
+\subsection{Baseline Hardware State \& Workstation Memory Budget Allocation}
 
-The architectural necessity for strict resource partitioning stems directly from the physical limits of consumer workstation components. The NVIDIA RTX 5070 Ti operates with a 16GB VRAM ceiling, of which approximately 10GB is idle and available for runtime allocation. If all 400 micro-agents simultaneously attempt to execute full 16-bit floating-point (FP16) inference or retain uncompressed Key-Value (KV) context windows in VRAM, the GPU memory space is instantly exhausted. This forces the operating system to swap memory pages over the PCIe Gen 5 bus, introducing severe bus contention.
+The architectural necessity for strict resource partitioning stems directly from the physical limits of consumer workstation components. The NVIDIA RTX 5070 Ti operates with a 16GB VRAM ceiling, partitioned between Tier 1 micro-agent LLM weights (1.8 GB), high-frequency pinned KV-caches (2.4 GB), and the offline PPO student batch training buffer (1.8 GB), consuming 6.00 GB total and leaving 10.0 GB of headroom. 
 
-Simultaneously, the Intel Core i7-14700K processor features a shared 30MB L3 cache across its performance and efficient cores. Unmanaged memory traversals by micro-agent inference tasks across the host's 128GB DDR5 memory space continually evict critical Limit Order Book arrays from CPU cache lines. This phenomenon--known as L3 cache thrashing--introduces millisecond-level execution jitter, destroying the temporal validity of the 1,000 TPS financial engine.
+Simultaneously, the Intel Core i7-14700K processor features a shared 30MB L3 cache across its performance and efficient cores. Unmanaged memory traversals across the host's 128GB DDR5 memory space continually evict critical Limit Order Book arrays from CPU cache lines. This phenomenon -- known as L3 cache thrashing -- introduces millisecond-level execution jitter, destroying the temporal validity of the financial engine.
 
-Table \ref{tab:hardware_budget_allocation} delineates the static physical hardware budget enforced across all AMPS subsystems.
+Tables \ref{tab:hardware_budget_allocation} and \ref{tab:vram_budget_allocation} delineate the static physical hardware budget enforced across host DDR5 RAM and dedicated GPU VRAM for concurrent Tier 1 and Tier 2 execution.
 
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabularx}{\textwidth}{l p{2.8cm} p{3.2cm} p{2.2cm} X}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\textwidth}{X r r}
 \toprule
-\textbf{Resource Type} & \textbf{Physical Capacity} & \textbf{Assigned Subsystem} & \textbf{Operational State} & \textbf{Target Footprint} \\
+\textbf{Host Memory Subsystem (128GB DDR5 RAM)} & \textbf{Allocated Size} & \textbf{Utilization (\% of 128GB)} \\
 \midrule
-Host RAM & 128GB DDR5 & State Arrays, Paged Agents, Arrow Batches & $\sim$68GB Idle Budget & $\sim$56GB Dedicated Allocation \\
-GPU VRAM & 16GB (RTX 5070 Ti) & Priority KV-Caches, Active LLM Weights & $\sim$10GB Available & $\sim$9.5GB Dedicated Budget \\
-CPU Inference & Cores 0--15 (8 P-Cores) & Swarm Matrix Ops, Agent Inference & Raptor Cove & 16 Threads Assigned \\
-CPU Engine & Cores 16--27 (12 E-Cores) & uvloop, Numba LOB Engine, Routing & Gracemont & 12 Threads Assigned \\
-Shared Memory & POSIX (/dev/shm) & Arrow C Data Interface \& IPC Queues & RAM File System & $\sim$12GB Dedicated Allocation \\
+1,000,000 Agent Instance State Arrays ($151 \times \text{FP32}$ contiguous buffers) & 10.00 GB & 7.8\% \\
+Shared Student Archetype Weights (4 Archetypes $\times$ 20KB INT8 models) & 0.02 GB & $<$0.1\% \\
+Zarr Telemetry \& Replay Buffers (Streaming NVMe ring cache) & 24.00 GB & 18.8\% \\
+POSIX \texttt{/dev/shm} Shared Memory \& Arrow IPC Buffers & 16.00 GB & 12.5\% \\
+OS Kernel, Linux cgroups v2 Core Isolation \& System Overhead & 12.00 GB & 9.4\% \\
+\midrule
+\textbf{Total Pinned Host DDR5 RAM Utilization} & \textbf{62.02 GB} & \textbf{48.4\% (65.98 GB Headroom)} \\
 \bottomrule
 \end{tabularx}
-\caption{Static physical hardware budget and subsystem allocation on fixed workstation silicon.}
+\caption{Host DDR5 physical RAM allocation budget across AMPS subsystems on fixed workstation silicon (128GB total physical capacity).}
 \label{tab:hardware_budget_allocation}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\textwidth}{X r r}
+\toprule
+\textbf{Dedicated GPU VRAM Subsystem (16GB RTX 5070 Ti)} & \textbf{Allocated Size} & \textbf{Utilization (\% of 16GB)} \\
+\midrule
+Tier 1 Micro-Agent LLM Weights (Qwen1.5-0.5B with 1.58-bit ternary quantization) & 1.80 GB & 11.3\% \\
+Pinned High-Frequency Agent KV-Caches (Top 50-80 AMMs and Whales) & 2.40 GB & 15.0\% \\
+Offline PPO Student Mini-Batch Training \& Optimizer States & 1.80 GB & 11.3\% \\
+\midrule
+\textbf{Total Dedicated GPU VRAM Utilization} & \textbf{6.00 GB} & \textbf{37.5\% (10.00 GB Headroom)} \\
+\bottomrule
+\end{tabularx}
+\caption{Dedicated GPU VRAM budget allocation on the NVIDIA RTX 5070 Ti (16GB total capacity) for Tier 1 teacher inference and offline PPO distillation.}
+\label{tab:vram_budget_allocation}
 \end{table}
 
 To bypass serialization bottlenecks during cross-process LOB state transfers, AMPS incorporates the Apache Arrow C Data Interface. Instead of incurring heavy JSON or Pickle serialization overhead, multi-dimensional LOB state matrices are exposed as Arrow columnar structures in shared memory (\texttt{/dev/shm}). Isolated execution processes exchange runtime state via zero-copy PyCapsule pointer transfers (\texttt{ArrowSchema} and \texttt{ArrowArray}), enabling instant data access without duplicating memory or invoking Python's Global Interpreter Lock (GIL). Furthermore, disk ingestion of raw Level-3 market ticks bypasses pandas entirely, utilizing multi-threaded Polars routines to parse streaming CSV data directly into Arrow array layouts aligned for Numba JIT execution.
 
 \subsection{P/E-Core NUMA Pinning \& Thread Isolation Topology}
 
-The default Linux Completely Fair Scheduler (CFS) is designed to optimize general-purpose multitasking by dynamically rebalancing software threads across all available CPU cores. In a heterogeneous microarchitecture such as the Intel Core i7-14700K--which integrates high-throughput Raptor Cove Performance Cores (P-Cores) with dense Gracemont Efficiency Cores (E-Cores)--dynamic thread migration introduces severe execution hazards. When the Linux CFS migrates a high-frequency financial matching loop from a P-Core to an E-Core, or vice versa, the execution context and local L2 cache lines are invalidated. This migration latency causes unpredictable execution spikes that destroy the microsecond-level determinism required by the LOB engine.
+The default Linux Completely Fair Scheduler (CFS) is designed to optimize general-purpose multitasking by dynamically rebalancing software threads across all available CPU cores. In a heterogeneous microarchitecture such as the Intel Core i7-14700K -- which integrates high-throughput Raptor Cove Performance Cores (P-Cores) with dense Gracemont Efficiency Cores (E-Cores) \cite{intel2024optimization} -- dynamic thread migration introduces severe execution hazards. When the Linux CFS migrates a high-frequency financial matching loop from a P-Core to an E-Core, or vice versa, the execution context and local L2 cache lines are invalidated. This migration latency causes unpredictable execution spikes that destroy the microsecond-level determinism required by the LOB engine.
 
 \begin{figure}[htbp]
 \centering
@@ -83,11 +106,15 @@ The default Linux Completely Fair Scheduler (CFS) is designed to optimize genera
 
 To eliminate thread migration penalties, AMPS enforces rigid Non-Uniform Memory Access (NUMA)-style core pinning at runtime. Cores 0 through 15 (comprising 8 Raptor Cove P-Cores with Hyper-Threading) are dedicated exclusively to heavy vector matrix operations and micro-agent inference tasks. Cores 16 through 27 (comprising 12 Gracemont E-Cores) are isolated strictly for running the uvloop asynchronous event loop, the Numba Just-In-Time (JIT) compiled LOB matching engine, and zero-copy event routing.
 
-This topology leverages the microarchitectural structure of the Gracemont cluster. The 12 E-Cores share a dedicated 4MB L2 cache per 4-core block. By binding the contiguous NumPy arrays representing the LOB matching engine directly to Cores 16--27, the matching state remains entirely bounded within the Gracemont cluster's 4MB L2 cache. The financial engine never needs to fetch state from the shared L3 cache or host DDR5 RAM during matching loops, shielding high-frequency order processing from the massive memory traversals executed by the micro-agents on Cores 0--15.
+This topology leverages the microarchitectural structure of the Gracemont cluster \cite{intel2024optimization}. The 12 E-Cores share a dedicated 4MB L2 cache per 4-core block. By binding the contiguous NumPy arrays representing the LOB matching engine directly to Cores 16--27, the matching state remains entirely bounded within the Gracemont cluster's 4MB L2 cache. The financial engine never needs to fetch state from the shared L3 cache or host DDR5 RAM during matching loops, shielding high-frequency order processing from the massive memory traversals executed by the micro-agents on Cores 0--15.
 
 Execution boundaries are enforced at system initialization using modern cgroup v2 interfaces via sysfs:
 
-\begin{lstlisting}[language=bash, caption={System initialization script for cgroup v2 CPU core isolation.}]
+\vspace{\baselineskip}
+
+\captionof{listing}{System initialization script for cgroup v2 CPU core isolation.}
+\label{listing:cgroup_isolation}
+\begin{minted}{bash}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -102,18 +129,21 @@ mkdir -p "${CGROUP_ROOT}/amps_ecores"
 
 echo "+cpuset" | sudo tee "${CGROUP_ROOT}/cgroup.subtree_control" > /dev/null
 
-# Assign physical Raptor Cove P-Cores (Cores 0-15) to micro-agent inference
+# Assign physical Raptor Cove P-Cores (Cores 0-15)
+# to micro-agent inference
 echo "0-15" | sudo tee "${CGROUP_ROOT}/amps_pcores/cpuset.cpus" > /dev/null
 echo "0"    | sudo tee "${CGROUP_ROOT}/amps_pcores/cpuset.mems" > /dev/null
 
-# Assign physical Gracemont E-Cores (Cores 16-27) to uvloop and Numba JIT LOB
+# Assign physical Gracemont E-Cores (Cores 16-27)
+# to uvloop and Numba JIT LOB
 echo "16-27" | sudo tee "${CGROUP_ROOT}/amps_ecores/cpuset.cpus" > /dev/null
 echo "0"     | sudo tee "${CGROUP_ROOT}/amps_ecores/cpuset.mems" > /dev/null
 
 # Migrate current initialization shell and sub-processes to E-Core group
 echo $$ | sudo tee "${CGROUP_ROOT}/amps_ecores/cgroup.procs" > /dev/null
-echo "cgroup v2 isolation topology successfully configured. PID $$ pinned to E-Cores."
-\end{lstlisting}
+echo "cgroup v2 isolation topology configured. PID $$ pinned to E-Cores."
+\end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Memory Paging Optimization: 2MB Transparent HugePages (THP) Strategy}
 
@@ -149,11 +179,15 @@ When 400 micro-agents continuously evaluate financial state matrices across $\si
 \label{fig:thp_comparison}
 \end{figure}
 
-The CPU relies on a hardware translation cache called the Translation Lookaside Buffer (TLB) to convert virtual addresses used by software into physical RAM locations. Because the i7-14700K TLB hardware cache can only store a few thousand entries, traversing 3 million 4KB page entries causes incessant TLB misses. The kernel is forced to continually pause execution to look up unmapped memory addresses from main system RAM--a process known as a page table walk. In micro-agent swarm processing, this aggregate TLB penalty degrades vector computation speed by upwards of 30\%.
+The CPU relies on a hardware translation cache called the Translation Lookaside Buffer (TLB) to convert virtual addresses used by software into physical RAM locations. Because the i7-14700K TLB hardware cache can only store a few thousand entries, traversing 3 million 4KB page entries causes incessant TLB misses. The kernel is forced to continually pause execution to look up unmapped memory addresses from main system RAM -- a process known as a page table walk. In micro-agent swarm processing, this aggregate TLB penalty degrades vector computation speed by upwards of 30\%.
 
-Configuring 2 Megabyte (MB) Transparent HugePages (THP) reduces the required page table entries from 3 million down to roughly 6,000 for a 12GB memory footprint--a 500-fold reduction. The CPU TLB can easily retain these 6,000 entries, near-completely eliminating TLB misses during agent state traversals.
+Configuring 2 Megabyte (MB) Transparent HugePages (THP) reduces the required page table entries from 3 million down to roughly 6,000 for a 12GB memory footprint -- a 500-fold reduction. The CPU TLB can easily retain these 6,000 entries, near-completely eliminating TLB misses during agent state traversals.
 
-\begin{lstlisting}[language=bash, caption={System initialization script for dynamic 2MB Transparent HugePages.}]
+\vspace{\baselineskip}
+
+\captionof{listing}{System initialization script for dynamic 2MB Transparent HugePages.}
+\label{listing:thp_config}
+\begin{minted}{bash}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -164,11 +198,14 @@ echo advise | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/khugepaged/max_ptes_none
 
 # Expand shared memory segment maximum allocation limit (/dev/shm)
-echo 17179869184 | sudo tee /proc/sys/kernel/shmmax # 16GB max shared memory segment
-echo 4194304 | sudo tee /proc/sys/kernel/shmall     # 4 million pages
+# 16GB max shared memory segment:
+echo 17179869184 | sudo tee /proc/sys/kernel/shmmax
+# 4 million 4KB pages (16GB):
+echo 4194304 | sudo tee /proc/sys/kernel/shmall
 
 echo "THP configuration successfully initialized."
-\end{lstlisting}
+\end{minted}
+\par\vspace*{\baselineskip}
 
 \section{Optimization Blueprint 1: Tiered KV-Cache VRAM Pinning Policy}
 
@@ -229,15 +266,19 @@ If key-value (KV) inference caches for all 400 agents are continuously swapped b
 \label{fig:tiered_vram}
 \end{figure}
 
-The micro-agents utilize ultra-lightweight language model architectures (such as Qwen1.5-0.5B parameters). By applying 1.58-bit ternary weight quantization--where weights are constrained strictly to discrete values of $\{-1, 0, 1\}$--the parameter memory footprint of each agent is reduced to roughly 200MB--300MB. The KV-cache for an active agent context window requires under 25MB--35MB.
+The micro-agents utilize ultra-lightweight language model architectures (such as Qwen1.5-0.5B parameters). By applying 1.58-bit ternary weight quantization -- where weights are constrained strictly to discrete values of $\{-1, 0, 1\}$ -- the parameter memory footprint of each agent is reduced to roughly 200MB to 300MB. The KV-cache for an active agent context window requires under 25MB to 35MB.
 
-By profiling the swarm, the system identifies the top 50 to 80 highest-frequency agents (liquidity providers and institutional whales). Pinning these 50--80 critical agents directly into the GPU's $\sim$10GB idle VRAM budget consumes only $\sim$1.8GB to $\sim$2.5GB of VRAM for parameters and KV-caches combined. The remaining $\sim$320 to 350 low-frequency retail agents have their dormant states offloaded to host DDR5 RAM via memory-mapped (\texttt{mmap}) files, and are dynamically loaded to VRAM only when actively executing a trade. Pinning high-frequency liquidity providers directly in GPU hardware memory eliminates over 80\% of PCIe bus transfers during standard simulation ticks.
+By profiling the swarm, the system identifies the top 50 to 80 highest-frequency agents (liquidity providers and institutional whales). Pinning these 50-80 critical agents directly into the GPU's $\sim$10GB idle VRAM budget consumes only $\sim$1.8GB to $\sim$2.5GB of VRAM for parameters and KV-caches combined. The remaining $\sim$320 to 350 low-frequency retail agents have their dormant states offloaded to host DDR5 RAM via memory-mapped (\texttt{mmap}) files, and are dynamically loaded to VRAM only when actively executing a trade. Pinning high-frequency liquidity providers directly in GPU hardware memory eliminates over 80\% of PCIe bus transfers during standard simulation ticks.
 
 \subsection{Implementation Architecture: \texttt{TieredVRAMManager}}
 
 The \texttt{TieredVRAMManager} governs GPU memory allocations by programmatically locking high-frequency agent KV-tensors into pinned host memory (\texttt{torch.cuda.HostRegister}) and persistent VRAM pools, while managing fallback dynamic page allocations for low-frequency agents.
 
-\begin{lstlisting}[language=python, caption={Tiered KV-Cache memory manager implementing CUDA host registration and async DMA transfers.}]
+\vspace{\baselineskip}
+
+\captionof{listing}{Tiered KV-Cache memory manager implementing CUDA host registration and async DMA transfers.}
+\label{listing:tiered_vram_manager}
+\begin{minted}{python}
 import torch
 import numpy as np
 
@@ -247,17 +288,23 @@ class TieredVRAMManager:
         self.tier1_capacity = tier1_capacity
         
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA execution environment unavailable for VRAM Pinning.")
+            raise RuntimeError("CUDA execution environment unavailable.")
         
         self.device = torch.device("cuda:0")
         
-        # 80 agents * 30MB KV-Cache allocation = ~2.4GB VRAM allocation
-        self.tier1_kv_pool = torch.zeros((self.tier1_capacity, 30 * 1024 * 1024), 
-                                         dtype=torch.int8, device=self.device)
+        # 80 agents * 30MB KV-Cache allocation = ~2.4GB VRAM
+        self.tier1_kv_pool = torch.zeros(
+            (self.tier1_capacity, 30 * 1024 * 1024), 
+            dtype=torch.int8, 
+            device=self.device
+        )
         
-        # Allocate pinned host memory pool for Tier-2 Agents (DDR5 System RAM)
-        self.tier2_host_buffer = torch.zeros((self.total_agents - self.tier1_capacity, 30 * 1024 * 1024),
-                                             dtype=torch.int8, pin_memory=True)
+        # Allocate pinned host memory pool for Tier-2 Agents (DDR5 RAM)
+        self.tier2_host_buffer = torch.zeros(
+            (self.total_agents - self.tier1_capacity, 30 * 1024 * 1024),
+            dtype=torch.int8, 
+            pin_memory=True
+        )
         
         self.agent_tier_map = np.zeros(self.total_agents, dtype=np.int32)
         self.agent_tier_map[:self.tier1_capacity] = 1 # Top 80 pinned to Tier-1
@@ -268,7 +315,7 @@ class TieredVRAMManager:
             # Tier-1 Path: Zero-latency direct VRAM pointer access (<500 ns)
             return self.tier1_kv_pool[agent_id]
         else:
-            # Tier-2 Path: Fast Asynchronous DMA Transfer from Pinned DDR5 to VRAM (~15-20 us)
+            # Tier-2 Path: Asynchronous DMA transfer from pinned DDR5 (~15-20 us)
             tier2_idx = agent_id - self.tier1_capacity
             host_tensor = self.tier2_host_buffer[tier2_idx]
             return host_tensor.to(self.device, non_blocking=True)
@@ -279,8 +326,8 @@ class TieredVRAMManager:
             return
         self.agent_tier_map[demote_agent_id] = 2
         self.agent_tier_map[promote_agent_id] = 1
-\end{lstlisting}
-
+\end{minted}
+\par\vspace*{\baselineskip}
 Table \ref{tab:agent_execution_tiers} compares the operational profiles of Tier-1 and Tier-2 agents.
 
 \begin{table}[htbp]
@@ -321,13 +368,20 @@ To resolve this inefficiency, AMPS implements a state input discretization pipel
 
 By applying this transformation, minor floating-point noise is filtered into discrete integer bins. Hundreds of micro-agents perceiving slightly different continuous price movements synthesize identical discrete state descriptions (e.g., \texttt{OFI\_BIN: +4}, \texttt{PRICE\_DEVIATION: -2}).
 
-\begin{lstlisting}[language=python, caption={Vectorized state metric discretization kernel compiled with Numba.}]
+\vspace{\baselineskip}
+
+\captionof{listing}{Vectorized state metric discretization kernel compiled with Numba.}
+\label{listing:discretize_market_state}
+\begin{minted}{python}
 import numpy as np
 from numba import njit
 
 @njit(fastmath=True)
-def discretize_market_state(ofi_array: np.ndarray, vwap_dev_array: np.ndarray, 
-                             num_bins: int = 10) -> np.ndarray:
+def discretize_market_state(
+    ofi_array: np.ndarray, 
+    vwap_dev_array: np.ndarray, 
+    num_bins: int = 10
+) -> np.ndarray:
     n_agents = ofi_array.shape[0]
     discrete_states = np.empty((n_agents, 2), dtype=np.int32)
     
@@ -339,7 +393,8 @@ def discretize_market_state(ofi_array: np.ndarray, vwap_dev_array: np.ndarray,
         discrete_states[i, 1] = int(round(dev_clamped))
         
     return discrete_states
-\end{lstlisting}
+\end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Singleflight Request Coalescing Engine Architecture}
 
@@ -394,52 +449,76 @@ The 671B MoE Macro Orchestrator (God Agent) operates on a slower macro timescale
 
 The client dispatches primary requests to DeepSeek V3 (\texttt{deepseek-chat}). If an API timeout exceeding 2,500ms or an HTTP 429/5xx status code is encountered, the client triggers an immediate automated fallback to Gemini 1.5 Flash (\texttt{gemini-1.5-flash}). Concurrently, a non-blocking background worker initiates periodic health-check probes against DeepSeek V3 until normal connectivity is restored. This dual-provider topology maintains a p99 nominal latency SLA of $< 800$ms, ensuring uninterrupted streaming into the POSIX shared memory (\texttt{/dev/shm}) ring buffer and preventing event-loop starvation across the 1,000 TPS Limit Order Book matching engine running on Gracemont E-cores.
 
-To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Invalid) cache coherence protocol across Gracemont E-core clusters, the ring buffer memory topography explicitly aligns atomic control pointers to separate 64-byte L1 cache lines:
+To eliminate false sharing under the CPU MESI (Modified, Exclusive, Shared, Invalid) cache coherence protocol across Gracemont E-core clusters \cite{drepper2007memory}, the ring buffer memory topography incorporates the mechanical sympathy and cache-line padding principles of the LMAX Disruptor \cite{thompson2011disruptor}, explicitly aligning atomic control pointers to separate 64-byte L1 cache lines:
 \begin{itemize}
     \item \textbf{Head Pointer (\texttt{head\_ptr}):} Byte offset 0..7 (8 bytes) + 56 bytes padding = 64 bytes total (Resides exclusively on Cache Line 0).
     \item \textbf{Tail Pointer (\texttt{tail\_ptr}):} Byte offset 64..71 (8 bytes) + 56 bytes padding = 64 bytes total (Resides exclusively on Cache Line 1).
     \item \textbf{Data Slots Array:} Byte offset 128 onwards.
 \end{itemize}
 
-To enforce hardware-level write sequencing without relying on invalid Python object allocations, AMPS invokes C-standard memory fences (\texttt{atomic\_thread\_fence}) via ctypes:
+To enforce hardware-level write sequencing without relying on invalid Python object allocations or non-exported symbols, AMPS invokes explicit atomic memory fences via a compiled CFFI native extension (\texttt{libatomic\_fence.so}):
 
-\begin{lstlisting}[language=python, caption={Lock-free shared memory ring buffer with explicit L1 cache line padding and C-standard memory fences.}]
-import ctypes
+\vspace{\baselineskip}
+
+\captionof{listing}{Lock-free shared memory ring buffer with explicit L1 cache line padding and compiled C-standard memory fences.}
+\label{listing:lockfree_ring_buffer}
+\begin{minted}{python}
 import multiprocessing.shared_memory as shm
 import numpy as np
+from cffi import FFI
 
-_libc = ctypes.CDLL(None)
+# Native CFFI binding invoking GCC/LLVM atomic intrinsics
+ffi = FFI()
+ffi.cdef("""
+    void atomic_thread_fence_release(void);
+    void atomic_thread_fence_acquire(void);
+""")
+# Backed by compiled native library executing inline:
+# void atomic_thread_fence_release() {
+#     __atomic_thread_fence(__ATOMIC_RELEASE);
+# }
+# void atomic_thread_fence_acquire() {
+#     __atomic_thread_fence(__ATOMIC_ACQUIRE);
+# }
+_fence_lib = ffi.dlopen("./libatomic_fence.so")
 
 def hardware_memory_barrier_release():
-    try:
-        _libc.__atomic_thread_fence(3) # __ATOMIC_RELEASE
-    except AttributeError:
-        pass
+    _fence_lib.atomic_thread_fence_release()
 
 def hardware_memory_barrier_acquire():
-    try:
-        _libc.__atomic_thread_fence(2) # __ATOMIC_ACQUIRE
-    except AttributeError:
-        pass
+    _fence_lib.atomic_thread_fence_acquire()
 
 class LockFreeMacroRingBuffer:
-    def __init__(self, name: str, capacity: int = 1024, slot_size: int = 256):
+    def __init__(
+        self, 
+        name: str, 
+        capacity: int = 1024, 
+        slot_size: int = 256
+    ):
         self.capacity = capacity
         self.slot_size = slot_size
         self.buffer_size = 64 + 64 + (capacity * slot_size)
         
-        self.shm = shm.SharedMemory(name=name, create=True, size=self.buffer_size)
+        self.shm = shm.SharedMemory(
+            name=name, create=True, size=self.buffer_size
+        )
         self.buf = self.shm.buf
         
-        self.head_ptr = np.ndarray((1,), dtype=np.int64, buffer=self.buf[0:8])
-        self.tail_ptr = np.ndarray((1,), dtype=np.int64, buffer=self.buf[64:72])
+        self.head_ptr = np.ndarray(
+            (1,), dtype=np.int64, buffer=self.buf[0:8]
+        )
+        self.tail_ptr = np.ndarray(
+            (1,), dtype=np.int64, buffer=self.buf[64:72]
+        )
 
     def push_narrative_vector(self, sentiment_vector: np.ndarray):
         current_head = self.head_ptr[0]
         next_head = (current_head + 1) % self.capacity
         slot_offset = 128 + (current_head * self.slot_size)
         
-        self.buf[slot_offset:slot_offset + self.slot_size] = sentiment_vector.tobytes()
+        self.buf[slot_offset:slot_offset + self.slot_size] = (
+            sentiment_vector.tobytes()
+        )
         hardware_memory_barrier_release()
         self.head_ptr[0] = next_head
 
@@ -451,11 +530,14 @@ class LockFreeMacroRingBuffer:
             return None
             
         slot_offset = 128 + (current_tail * self.slot_size)
-        data_bytes = bytes(self.buf[slot_offset:slot_offset + self.slot_size])
+        data_bytes = bytes(
+            self.buf[slot_offset:slot_offset + self.slot_size]
+        )
         hardware_memory_barrier_acquire()
         self.tail_ptr[0] = (current_tail + 1) % self.capacity
         return np.frombuffer(data_bytes, dtype=np.float32)
-\end{lstlisting}
+\end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Linear Decay Fallback \& Shock Degradation}
 
@@ -555,7 +637,7 @@ To accelerate vector matching, 1-Bit Binary Quantization (BQ) converts the trunc
 
 Calculating the distance between two 128-bit binary signatures requires an Exclusive-OR (XOR) operation followed by a bitwise population count (popcount), determining the Hamming Distance between vectors.
 
-While AVX-512 vector instructions can compute 512-bit population counts in a single clock cycle, AVX-512 cannot be executed on the Intel Core i7-14700K. Because Gracemont E-Cores lack physical AVX-512 hardware execution units, Intel physically fused off AVX-512 support across the entire processor die to ensure instruction-set compatibility across cores. Attempting to call AVX-512 instructions (such as default FAISS library configurations) triggers an unhandled Illegal Instruction hardware fault.
+While AVX-512 vector instructions can compute 512-bit population counts in a single clock cycle, AVX-512 cannot be executed on the Intel Core i7-14700K. Because Gracemont E-Cores lack physical AVX-512 hardware execution units, Intel physically fused off AVX-512 support across the entire processor die to ensure instruction-set compatibility across cores \cite{intel2024optimization}. Attempting to call AVX-512 instructions (such as default FAISS library configurations) triggers an unhandled Illegal Instruction hardware fault.
 
 To achieve microsecond vector matching without AVX-512, AMPS utilizes the SSE4.2 instruction set extension, specifically the hardware-accelerated \texttt{POPCNT} intrinsic. The SSE4.2 \texttt{POPCNT} instruction executes in 1 clock cycle per 64-bit register, in sharp contrast to the 15--20 clock cycles required for an unaligned floating-point (FP32) dot product.
 
@@ -612,12 +694,19 @@ To achieve microsecond vector matching without AVX-512, AMPS utilizes the SSE4.2
 
 The Numba JIT engine compiles bit-counting functions directly into LLVM IR intrinsics (\texttt{llvm.ctpop.i64}) without heap allocations:
 
-\begin{lstlisting}[language=python, caption={Hardware-accelerated bitwise Hamming distance computation using SSE4.2 POPCNT via Numba.}]
+\vspace{\baselineskip}
+
+\captionof{listing}{Hardware-accelerated bitwise Hamming distance computation using SSE4.2 POPCNT via Numba.}
+\label{listing:hamming_sse42}
+\begin{minted}{python}
 import numpy as np
 from numba import njit
 
 @njit(fastmath=True)
-def calculate_hamming_distance_sse42(query_sig: np.ndarray, db_sig: np.ndarray) -> int:
+def calculate_hamming_distance_sse42(
+    query_sig: np.ndarray, 
+    db_sig: np.ndarray
+) -> int:
     xor_upper = query_sig[0] ^ db_sig[0]
     xor_lower = query_sig[1] ^ db_sig[1]
     
@@ -626,7 +715,8 @@ def calculate_hamming_distance_sse42(query_sig: np.ndarray, db_sig: np.ndarray) 
     dist_lower = int(xor_lower).bit_count()
     
     return dist_upper + dist_lower
-\end{lstlisting}
+\end{minted}
+\par\vspace*{\baselineskip}
 
 \subsection{Threshold Window Relaxation \& Secondary FP32 Verification}
 
@@ -713,7 +803,7 @@ GPU Compute Overhead & 100\% Active Load & $\sim$20\% Fallback Load & $<$ 5\% Fa
 
 To maintain hardware performance guarantees and prevent code regressions, the AMPS repository enforces automated testing gates within its Continuous Integration (CI/CD) pipeline.
 
-The verification engine enforces Table-to-Trace Parity using \texttt{pytest}. Markdown Data-Flow Matrices--which document theoretical market state transitions and expected parameter bounds--are parsed by automated scripts. Tests execute the Numba engine in isolation against deterministic mock event streams, bypassing the stochastic LLM generative swarm to ensure predictable build outcomes. The resulting execution traces are validated point-by-point against the values defined in the Data-Flow Matrices.
+The verification engine enforces Table-to-Trace Parity using \texttt{pytest}. Markdown Data-Flow Matrices -- which document theoretical market state transitions and expected parameter bounds -- are parsed by automated scripts. Tests execute the Numba engine in isolation against deterministic mock event streams, bypassing the stochastic LLM generative swarm to ensure predictable build outcomes. The resulting execution traces are validated point-by-point against the values defined in the Data-Flow Matrices.
 
 To guarantee state persistence and deterministic replay, the Numba matching engine employs a Double Buffering paradigm (Read Layer vs. Write Layer) at every tick. All state transitions are compiled into immutable, contiguous NumPy arrays in the Write Layer and swapped to the Read Layer at tick completion. These arrays are streamed directly to Zarr chunked telemetry files. During post-crash analysis or replay debugging, the visualization front-end loads historical Zarr chunks directly, completely bypassing LLM inference and the Numba engine.
 
@@ -768,21 +858,22 @@ Simultaneously, an automated Abstract Syntax Tree (AST) parser engine (invoked v
 
 \subsection{Consolidated Hardware Optimization Matrix}
 
-The four software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2$ $\mu$s (mean $3.8$ $\mu$s), and a Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash). Table \ref{tab:hardware_optimization_matrix} summarizes the four core architectural blueprints.
+The software optimization blueprints synthesize physical hardware resources with data-oriented engineering practices, expanding simulation capacity on fixed workstation silicon from a 400-agent teacher generator to a 1,000,000-agent distilled production swarm. Under this topology, the simulation enforces rigid runtime SLAs: AMM VRAM latency $< 500$ ns, SIRC popcnt query latency $< 2\,\mu$s (mean $3.8\,\mu$s) strictly for Tier 1 teacher semantic search on Raptor Cove P-cores, Dual-Provider API Latency SLA (p99 Nominal) of $< 800$ms (with a 2,500ms hard timeout triggering automated secondary failover to Gemini 1.5 Flash), and a student policy forward pass latency of $\tau_{\text{execution}} \le 0.2\,\mu\text{s}$ ($<200$ ns) strictly for Tier 2 batched student passes on Gracemont E-cores. Table \ref{tab:hardware_optimization_matrix} summarizes the consolidated architectural blueprints.
 
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabularx}{\textwidth}{p{3.2cm} l p{3.0cm} X}
+\begin{tabularx}{\textwidth}{p{3.0cm} l p{2.8cm} X}
 \toprule
 \textbf{Optimization Blueprint} & \textbf{Effort} & \textbf{Hardware Leveraged} & \textbf{Primary Metric Impact} \\
 \midrule
 1. Tiered KV-Cache VRAM Pinning & Medium (1--2 d) & RTX 5070 Ti VRAM \& Pinned DDR5 RAM & Reduces PCIe transfers by $>$80\%; pins 80 AMMs in VRAM ($<$500 ns latency; 12.5 ms $\to$ 1.2 ms). \\
 2. Input Discretization \& Singleflight & Low (1 d) & CUDA Cores \& uvloop Event Loop & Coalesces 400 agent queries into 5--10 passes, eliminating cache stampedes and flattening VRAM spikes. \\
-3. Asynchronous Macro Ring Buffer & Low (1 d) & POSIX /dev/shm \& Gracemont E-Cores & Dual-provider failover (p99 SLA $<$ 800ms, 2.5s timeout); isolates 1,000 TPS LOB engine from API jitter; enables NPIV causal econometric isolation. \\
+3. Asynchronous Macro Ring Buffer & Low (1 d) & POSIX /dev/shm \& Gracemont E-Cores & Dual-provider failover (p99 SLA $<$ 800ms, 2.5s timeout); isolates LOB engine from API jitter; enables NPIV causal econometric isolation. \\
 4. Relaxed SIRC \& SSE4.2 POPCNT & Medium (2 d) & Gracemont E-Core ALU (SSE4.2 POPCNT) & Increases zero-GPU cache hit rate from 80\% to 95\%; reduces mean query latency from 12.5 ms to 3.8 $\mu$s. \\
+5. Distilled Policy Swarm (1M Agents) & High (3--4 d) & Gracemont E-Cores (AVX2, BMI2, 4MB L2) & Sub-0.2 $\mu$s policy evaluation latency ($<$200 ns); scales to 1,000,000 agents; $>$100,000 TPS deterministic matching. \\
 \bottomrule
 \end{tabularx}
-\caption{Consolidated hardware optimization matrix and engineering roadmap.}
+\caption{Consolidated hardware optimization matrix and engineering roadmap across Tier 1 teacher and Tier 2 distilled execution.}
 \label{tab:hardware_optimization_matrix}
 \end{table}

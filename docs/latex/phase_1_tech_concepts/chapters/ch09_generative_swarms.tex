@@ -1,7 +1,8 @@
-\chapter{Generative Agent Swarms}
+\chapter{Tier 1 Generative Agent Swarms}
 \label{ch:generative_agent_swarms}
+\label{ch:generative_swarms}
 
-While the matching engine computes the mathematical reality of the simulation, the behavior of the market is driven entirely by the cognitive decisions of generative Large Language Models (LLMs). This chapter details the hierarchical architecture of the Agent Swarm, dividing the computational load between a massive, omniscient Macro Orchestrator and hundreds of localized, boundedly-rational micro-agents.
+While the matching engine computes the mathematical reality of the simulation, the cognitive behavior of the market during macroeconomic stress is driven by generative Large Language Models (LLMs). Within the AMPS two-tier architecture, this chapter details the \textbf{Tier 1 Behavioral Teacher Engine}: a workstation-scale swarm where an omniscient Macro Orchestrator interacts with 400 localized, boundedly-rational micro-agents to harvest rich state-action-reward trajectories for offline policy distillation.
 
 \section{The 671B Macro Orchestrator (The God Agent)}
 
@@ -81,25 +82,25 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
     }
 ]
 
-    % --- Row 1: Perception & Initial Proposal ---
+    % -- Row 1: Perception & Initial Proposal --
     \node[box, draw=navyBorder, fill=navyBg] (perceive) at (0, 0)
         {1. Perceive State\\{\scriptsize (LOB Depth, OFI, News)}};
 
     \node[box, draw=amberBorder, fill=amberBg] (propose) at (6.2, 0)
         {2. Propose Trade\\{\scriptsize (1.58-bit LLM Swarm)}};
 
-    % --- Row 2: Reflexion Memory & Critique ---
+    % -- Row 2: Reflexion Memory & Critique --
     \node[box, draw=crimsonBorder, fill=crimsonBg] (halt) at (0, -2.4)
         {Reflexion Memory\\{\scriptsize (Buffer Mutation / Abort if $k > 3$)}};
 
     \node[box, draw=coralBorder, fill=coralBg] (critique) at (6.2, -2.4)
         {3. Internal Critique\\{\scriptsize (Historical PnL \& Repetition)}};
 
-    % --- Row 3: Execution ---
+    % -- Row 3: Execution --
     \node[box, draw=emeraldBorder, fill=emeraldBg] (execute) at (6.2, -4.8)
         {4. Execute to LOB\\{\scriptsize (Order Flow Generation)}};
 
-    % --- Visual Boundary: GPU-Bound LLM Engine ---
+    % -- Visual Boundary: GPU-Bound LLM Engine --
     \begin{scope}[on background layer]
         \node[
             draw=charcoal!35, dashed, fill=slateBg,
@@ -110,7 +111,7 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
         ] (llmcore) {};
     \end{scope}
 
-    % --- Primary Execution & Critique Flow ---
+    % -- Primary Execution & Critique Flow --
     \draw[arr] (perceive) -- 
         node[lbl, align=center, above=2pt, pos=0.35] {Cache Miss\\($d_H > 12$)} 
         (propose);
@@ -123,7 +124,7 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
         node[lbl, right=3pt, text=emeraldBorder, pos=0.7] {Pass: Rational} 
         (execute);
 
-    % --- Fail & Reflexion Loop ---
+    % -- Fail & Reflexion Loop --
     \draw[arr] (critique) -- 
         node[lbl, align=center, above=2pt, text=crimsonBorder, pos=0.45] {Fail:\\Irrational} 
         (halt);
@@ -132,7 +133,7 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
         node[lbl, align=center, left=3pt] {Mutate Context\\($k \le 3$)} 
         (perceive);
 
-    % --- Routing Channel 1: SIRC Fast-Path Bypass (Zero-GPU Execution) ---
+    % -- Routing Channel 1: SIRC Fast-Path Bypass (Zero-GPU Execution) --
     \coordinate (topBus) at (0, 1.15);
     \coordinate (rightBus) at ([xshift=1.35cm]llmcore.east);
 
@@ -143,7 +144,7 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
         -- (execute.east -| rightBus)
         -- (execute.east);
 
-    % --- Routing Channel 2: Macro LOB Market Feedback ---
+    % -- Routing Channel 2: Macro LOB Market Feedback --
     \coordinate (leftBus) at ([xshift=-1.35cm]halt.west);
 
     \draw[arr, draw=emeraldBorder!85!black, line width=1.1pt] 
@@ -158,4 +159,45 @@ Before a micro-agent submits a trade to the zero-copy \texttt{/dev/shm} bus, it 
 \label{fig:reflexion_loop}
 \end{figure}
 
-If the internal critique deems the action overly repetitive (e.g., "I have sold this asset 5 times in the last 10 seconds without new information"), the agent self-corrects and suppresses the trade. This injects necessary behavioural friction into the system, ensuring that the simulated trading volume accurately mirrors human hesitation and risk management.
+If the internal critique deems the action overly repetitive (e.g., ``I have sold this asset 5 times in the last 10 seconds without new information''), the agent self-corrects and suppresses the trade. This injects necessary behavioural friction into the system, ensuring that the simulated trading volume accurately mirrors human hesitation and risk management.
+
+\section{From 400 to 1,000,000 Agents: Offline RL Trajectory Distillation}
+\label{sec:offline_distillation_intro}
+
+While the 400-agent generative swarm successfully demonstrates cognitive reasoning, zero-shot narrative parsing, and emergent panic cascades, executing online autoregressive LLM token generation for millions of concurrent agents is physically impossible on workstation hardware. 
+
+\subsection{Deconstructing the Online LLM Scaling Wall}
+
+In high-frequency limit order book execution, microstructural events -- such as Order Flow Imbalance (OFI) spikes or Limit Up -- Limit Down (LULD) volatility halts -- demand microsecond execution determinism. Online LLM token generation violates these physical constraints due to three structural bottlenecks:
+\begin{enumerate}
+    \item \textbf{Inference Latency \& Execution Jitter:} Even when utilizing localized Qwen1.5-0.5B models with 1.58-bit ternary quantization \cite{ma2024bitnet}, Singleflight request coalescing \cite{fitzpatrick2018singleflight, vattani2015cache}, and SIRC semantic caching, online autoregressive generation requires between 12.5 milliseconds (coalesced GPU path) and over 1.0 second (uncoalesced/cache-miss path) per decision step. This magnitude of latency variance introduces execution jitter that completely destroys LOB price-time priority determinism.
+    \item \textbf{PCIe Bus \& VRAM Exhaustion:} Maintaining active Key-Value (KV) caches and executing 1,000,000 simultaneous autoregressive token loops would require tens of terabytes of memory, saturating PCIe bus bandwidth and causing severe GPU interface over-allocation.
+    \item \textbf{Microstructural Deadline Justification ($\tau_{\text{execution}} \le 0.2\,\mu\text{s}$):} At throughputs exceeding $> 100,000$ Ticks/Sec across 1,000,000 active agents, any policy evaluation latency exceeding 200 nanoseconds ($0.2\,\mu\text{s}$) causes thread queue congestion on Gracemont E-Core processing pipelines. This queue delay destroys First-In, First-Out (FIFO) price-time priority ordering in the matching engine, converting a deterministic matching environment into an artifact-ridden, non-deterministic system.
+\end{enumerate}
+
+Table \ref{tab:online_vs_distilled_swarm} contrasts the operational profiles of the Tier 1 online LLM teacher swarm and the Tier 2 distilled student policy swarm.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{p{4.0cm} p{4.6cm} X}
+\toprule
+\textbf{System Parameter} & \textbf{Online LLM Swarm (400 Agents)} & \textbf{Distilled Policy Swarm (1,000,000 Agents)} \\
+\midrule
+Inference Latency & $\sim 12.5$ ms (Coalesced GPU) to $> 1.0$ s & $< 0.2\,\mu$s (Vectorized SIMD on Host CPU) \\
+VRAM Footprint & 14.2 GB (RTX 5070 Ti 16GB Allocation) & $< 2.0$ GB (Offline PPO Batch Buffers) \\
+System Memory Usage & 32.0 GB DDR5 (2MB Transparent HugePages) & $\sim 10.0$ GB DDR5 Total ($< 10$ KB State per Agent) \\
+Throughput (Ticks/Sec) & 1,000 Ticks/Sec (Hard Capped via SIRC) & $> 100,000$ Ticks/Sec (Bare-Metal Parallel) \\
+Behavioral Capabilities & Zero-Shot Narrative Parsing, Reflexion Loops & Preserved Bounded Rationality \& Contagion \\
+\bottomrule
+\end{tabularx}
+\caption{Architectural comparison between the Tier 1 Online LLM Teacher Swarm and the Tier 2 Distilled Student Policy Swarm.}
+\label{tab:online_vs_distilled_swarm}
+\end{table}
+
+To resolve this dichotomy, AMPS establishes a \textbf{Two-Tier Architecture Taxonomy}:
+\begin{itemize}
+    \item \textbf{Tier 1 (Behavioral Teacher Engine):} The 400 generative agents and 671B Macro Orchestrator operate offline as scenario generators, synthesizing rich state-action-reward trajectory streams across diverse market regimes.
+    \item \textbf{Tier 2 (Distilled Student Swarm):} Offline Proximal Policy Optimization (PPO) distills teacher trajectories into compact 2-layer Multi-Layer Perceptrons (MLPs), deploying 1,000,000 concurrent agents directly on host CPU Gracemont E-cores with sub-0.2 $\mu$s forward-pass latency.
+\end{itemize}
+Part IV formalizes the mathematical and operational mechanics of this offline trajectory distillation framework.
